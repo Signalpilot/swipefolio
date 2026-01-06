@@ -3122,10 +3122,10 @@ export default function SwipeInvest() {
         </div>
 
         {/* Community Sidebar - Desktop Only */}
-        {assetType === 'crypto' && coins.length > 0 && (
+        {currentAssets.length > 0 && (
           <div className="hidden lg:flex flex-col gap-4 w-72 pl-4">
             <DailyPrediction
-              coins={coins}
+              coins={currentAssets}
               onVote={handlePredictionVote}
               userVote={predictionVote}
             />
