@@ -3064,6 +3064,22 @@ export default function SwipeInvest() {
         ))}
       </div>
 
+      {/* Community Features - Mobile Only (horizontal scroll) */}
+      {currentAssets.length > 0 && (
+        <div className="lg:hidden flex gap-3 px-3 pb-2 overflow-x-auto scrollbar-hide">
+          <div className="flex-shrink-0 w-64">
+            <DailyPrediction
+              coins={currentAssets}
+              onVote={handlePredictionVote}
+              userVote={predictionVote}
+            />
+          </div>
+          <div className="flex-shrink-0 w-64">
+            <Leaderboard portfolio={portfolio} />
+          </div>
+        </div>
+      )}
+
       {/* Card Stack Area with Community Sidebar on Desktop */}
       <div className="flex-1 flex items-stretch p-4 relative overflow-hidden">
         {/* Main Card Area */}
