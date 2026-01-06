@@ -166,12 +166,24 @@ const STOCK_LIST = [
 // For backwards compatibility
 const CATEGORIES = CRYPTO_CATEGORIES;
 
-// Affiliate links
+// Affiliate links - Crypto exchanges & Stock brokers
 const AFFILIATE_LINKS = {
+  // Crypto
   coinbase: 'https://advanced.coinbase.com/join/YAHNU27',
   binance: 'https://www.binance.com/activity/referral-entry/CPA?ref=CPA_003NFBSRRH',
   bybit: 'https://www.bybit.com/invite?ref=LW6W7',
+  kraken: 'https://www.kraken.com',
+  kucoin: 'https://www.kucoin.com',
+  // Stocks
+  robinhood: 'https://join.robinhood.com/swipeinvest',
+  webull: 'https://www.webull.com',
+  etoro: 'https://www.etoro.com',
+  interactivebrokers: 'https://www.interactivebrokers.com',
 };
+
+// Monetization constants
+const FREE_DAILY_SWIPES = 25;
+const PREMIUM_PRICE = '$4.99/month';
 
 // Stablecoins to filter out (no point swiping on $1 pegged coins)
 const STABLECOIN_IDS = [
@@ -1804,8 +1816,150 @@ const PortfolioView = ({ portfolio, currentPrices, onBack, onRemove, onShare }) 
 };
 
 // ============================================================================
+// PREMIUM UPSELL MODAL
+// ============================================================================
+
+const PremiumModal = ({ onClose, swipesUsed, assetType }) => {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl p-6 max-w-sm w-full border border-purple-500/30 shadow-2xl"
+        initial={{ scale: 0.8, y: 50 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.8, y: 50 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Crown icon */}
+        <div className="text-center mb-4">
+          <span className="text-6xl">👑</span>
+        </div>
+
+        <h2 className="text-2xl font-black text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+          You're on Fire!
+        </h2>
+
+        <p className="text-slate-400 text-center mb-4">
+          You've used all {FREE_DAILY_SWIPES} free swipes today. Upgrade to Premium for unlimited swiping!
+        </p>
+
+        {/* Premium features */}
+        <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-white/5">
+          <p className="text-sm font-bold text-purple-400 mb-3">Premium Features:</p>
+          <ul className="space-y-2 text-sm text-slate-300">
+            <li className="flex items-center gap-2">
+              <span className="text-green-400">✓</span> Unlimited daily swipes
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-green-400">✓</span> Advanced filters (market cap, volume)
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-green-400">✓</span> Price alerts & notifications
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-green-400">✓</span> Export portfolio to CSV
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-green-400">✓</span> No ads
+            </li>
+          </ul>
+        </div>
+
+        {/* Price */}
+        <div className="text-center mb-4">
+          <span className="text-3xl font-black text-white">{PREMIUM_PRICE}</span>
+          <p className="text-slate-500 text-sm">Cancel anytime</p>
+        </div>
+
+        {/* CTA Buttons */}
+        <button
+          onClick={() => {
+            // TODO: Integrate with Google Play Billing
+            alert('Premium coming soon! For now, enjoy unlimited swipes 🎉');
+            localStorage.setItem('swipeinvest_premium', 'true');
+            onClose();
+          }}
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-3 rounded-xl font-bold text-lg mb-3 hover:opacity-90 transition"
+        >
+          Upgrade to Premium
+        </button>
+
+        <button
+          onClick={onClose}
+          className="w-full text-slate-500 py-2 text-sm hover:text-slate-300 transition"
+        >
+          Maybe later
+        </button>
+
+        {/* Or trade now */}
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <p className="text-xs text-slate-500 text-center mb-2">Or start trading now:</p>
+          <div className="flex gap-2">
+            {assetType === 'crypto' ? (
+              <>
+                <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 bg-blue-600 py-2 rounded-lg text-center text-xs font-bold hover:bg-blue-500 transition">
+                  Coinbase
+                </a>
+                <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 bg-yellow-500 text-black py-2 rounded-lg text-center text-xs font-bold hover:bg-yellow-400 transition">
+                  Binance
+                </a>
+              </>
+            ) : (
+              <>
+                <a href={AFFILIATE_LINKS.robinhood} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 bg-green-500 py-2 rounded-lg text-center text-xs font-bold hover:bg-green-400 transition">
+                  Robinhood
+                </a>
+                <a href={AFFILIATE_LINKS.webull} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 bg-orange-500 py-2 rounded-lg text-center text-xs font-bold hover:bg-orange-400 transition">
+                  Webull
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ============================================================================
+// AD BANNER COMPONENT (placeholder for AdMob)
+// ============================================================================
+
+const AdBanner = ({ slot = 'bottom' }) => {
+  // This is a placeholder - replace with actual AdMob component
+  // For React: use @react-native-admob/admob or react-native-google-mobile-ads
+  return (
+    <div className="bg-slate-800/50 border border-white/5 rounded-lg p-2 text-center">
+      <p className="text-slate-600 text-xs">
+        {/* AdMob Banner - slot: {slot} */}
+        <a
+          href={AFFILIATE_LINKS.coinbase}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-purple-400 hover:text-purple-300"
+        >
+          Start trading on Coinbase →
+        </a>
+      </p>
+    </div>
+  );
+};
+
+// ============================================================================
 // MAIN APP COMPONENT
 // ============================================================================
+
+// Helper to get today's date key
+const getTodayKey = () => new Date().toISOString().split('T')[0];
 
 export default function SwipeInvest() {
   // Views: 'landing', 'swipe', 'portfolio'
@@ -1825,6 +1979,11 @@ export default function SwipeInvest() {
   const [detailModal, setDetailModal] = useState(null); // For coin/stock detail with TradingView
   const [fearGreed, setFearGreed] = useState({ value: null, label: '' }); // Fear & Greed index
   const [marketStatus, setMarketStatus] = useState('open'); // 'open', 'closed', 'premarket'
+
+  // Monetization state
+  const [isPremium, setIsPremium] = useState(false);
+  const [swipesToday, setSwipesToday] = useState(0);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0); // Incremented to trigger confetti
   const [swipeEffect, setSwipeEffect] = useState(null); // 'left' or 'right' for trail effect
 
@@ -1839,10 +1998,24 @@ export default function SwipeInvest() {
     const savedPortfolio = localStorage.getItem('coinswipe_portfolio');
     const savedStats = localStorage.getItem('coinswipe_stats_v2');
     const savedLanded = localStorage.getItem('coinswipe_landed');
+    const savedPremium = localStorage.getItem('swipeinvest_premium');
+    const savedSwipes = localStorage.getItem('swipeinvest_swipes');
 
     if (savedPortfolio) setPortfolio(JSON.parse(savedPortfolio));
     if (savedStats) setStats(JSON.parse(savedStats));
     if (savedLanded) setView('swipe');
+    if (savedPremium === 'true') setIsPremium(true);
+
+    // Load swipes - reset if it's a new day
+    if (savedSwipes) {
+      const { date, count } = JSON.parse(savedSwipes);
+      if (date === getTodayKey()) {
+        setSwipesToday(count);
+      } else {
+        // New day, reset counter
+        localStorage.setItem('swipeinvest_swipes', JSON.stringify({ date: getTodayKey(), count: 0 }));
+      }
+    }
   }, []);
 
   // Save to localStorage
@@ -2162,6 +2335,17 @@ export default function SwipeInvest() {
   const handleSwipe = (direction, isSuper = false) => {
     if (currentIndex >= filteredCoins.length) return;
 
+    // Check swipe limit for free users
+    if (!isPremium && swipesToday >= FREE_DAILY_SWIPES) {
+      setShowPremiumModal(true);
+      return;
+    }
+
+    // Increment swipe counter
+    const newCount = swipesToday + 1;
+    setSwipesToday(newCount);
+    localStorage.setItem('swipeinvest_swipes', JSON.stringify({ date: getTodayKey(), count: newCount }));
+
     const coin = filteredCoins[currentIndex];
 
     // Save to history for undo
@@ -2441,6 +2625,17 @@ export default function SwipeInvest() {
         )}
       </AnimatePresence>
 
+      {/* Premium Upsell Modal */}
+      <AnimatePresence>
+        {showPremiumModal && (
+          <PremiumModal
+            onClose={() => setShowPremiumModal(false)}
+            swipesUsed={swipesToday}
+            assetType={assetType}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header - Glassmorphism */}
       <header
         className="relative z-10 flex justify-between items-center p-4 border-b border-white/[0.08]"
@@ -2604,6 +2799,28 @@ export default function SwipeInvest() {
           </div>
         )}
       </div>
+
+      {/* Swipes Counter (for free users) */}
+      {!isPremium && currentIndex < filteredCoins.length && (
+        <div className="relative z-10 flex justify-center">
+          <div className="bg-slate-800/60 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+            <span className="text-xs text-slate-400">
+              {swipesToday}/{FREE_DAILY_SWIPES} swipes
+            </span>
+            <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  swipesToday >= FREE_DAILY_SWIPES - 5 ? 'bg-orange-500' : 'bg-purple-500'
+                }`}
+                style={{ width: `${Math.min(100, (swipesToday / FREE_DAILY_SWIPES) * 100)}%` }}
+              />
+            </div>
+            {swipesToday >= FREE_DAILY_SWIPES - 5 && swipesToday < FREE_DAILY_SWIPES && (
+              <span className="text-orange-400 text-xs">⚡ {FREE_DAILY_SWIPES - swipesToday} left</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Action Buttons - Glassmorphism Bar */}
       {currentIndex < filteredCoins.length && (
