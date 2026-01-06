@@ -2701,13 +2701,29 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
 
 // Chat moderation utilities
 const BANNED_WORDS = [
-  'scam', 'rugpull', 'rug pull', 'ponzi', 'pump and dump',
-  // Add more inappropriate words as needed - keeping it family friendly
-  'fuck', 'shit', 'ass', 'bitch', 'dick', 'porn', 'xxx',
-  'nigger', 'faggot', 'retard',
+  // Profanity
+  'fuck', 'shit', 'ass', 'bitch', 'dick', 'porn', 'xxx', 'cock', 'cunt', 'pussy',
+  'nigger', 'faggot', 'retard', 'kike', 'spic', 'chink',
   // Crypto scam patterns
-  'send btc', 'send eth', 'double your', 'guaranteed profit',
-  'dm me for', 'whatsapp', 'telegram group'
+  'scam', 'rugpull', 'rug pull', 'ponzi', 'pump and dump',
+  'send btc', 'send eth', 'send sol', 'send usdt', 'send crypto',
+  'double your', 'guaranteed profit', 'guaranteed returns', '100x guaranteed',
+  'dm me for', 'message me for', 'contact me for',
+  'whatsapp', 'telegram group', 'join my group', 'private group',
+  'free money', 'free crypto', 'free bitcoin', 'giveaway',
+  'investment opportunity', 'make money fast', 'get rich quick',
+  'send me your', 'share your wallet', 'give me your seed', 'seed phrase',
+  'private key', 'wallet connect', 'verify your wallet',
+  'click this link', 'click here', 'bit.ly', 'tinyurl',
+  'elon musk', 'official giveaway', 'airdrop claim',
+  'recover your funds', 'stolen funds', 'hack recovery',
+  'trust wallet support', 'metamask support', 'binance support',
+  // Phishing patterns
+  'customer service', 'tech support', 'account suspended',
+  'verify account', 'confirm identity', 'kyc verification',
+  // Spam patterns
+  'follow me', 'follow for follow', 'like and subscribe',
+  'check my profile', 'check my bio', 'link in bio'
 ];
 
 const filterProfanity = (text) => {
