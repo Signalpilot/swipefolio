@@ -3724,6 +3724,15 @@ export default function Swipefolio() {
   // Keyboard shortcuts for power users
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore if user is typing in an input field
+      const activeElement = document.activeElement;
+      const isTyping = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.isContentEditable
+      );
+      if (isTyping) return;
+
       // Only in swipe view and when no modal is open
       if (view !== 'swipe' || matchModal || detailModal) return;
       if (currentIndex >= filteredCoins.length) return;
