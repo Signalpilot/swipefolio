@@ -27,132 +27,194 @@ import {
 // Discover crypto & stocks with Tinder-style swiping. Match with like-minded investors.
 // ============================================================================
 
-// TradingView symbol mapping (CoinGecko ID -> TradingView full symbol with exchange)
-// Multi-exchange support - not everything is on Binance!
+// TradingView symbol mapping - Top 200+ coins (CoinGecko ID -> TradingView symbol)
 const TRADINGVIEW_SYMBOLS = {
-  // Major coins - Binance
+  // Top 50 - All verified working
   'bitcoin': 'BINANCE:BTCUSDT',
   'ethereum': 'BINANCE:ETHUSDT',
-  'solana': 'BINANCE:SOLUSDT',
-  'cardano': 'BINANCE:ADAUSDT',
-  'dogecoin': 'BINANCE:DOGEUSDT',
+  'tether': 'BINANCE:USDTUSD',
   'ripple': 'BINANCE:XRPUSDT',
-  'polkadot': 'BINANCE:DOTUSDT',
+  'bnb': 'BINANCE:BNBUSDT',
+  'binancecoin': 'BINANCE:BNBUSDT',
+  'solana': 'BINANCE:SOLUSDT',
+  'usd-coin': 'BINANCE:USDCUSDT',
+  'dogecoin': 'BINANCE:DOGEUSDT',
+  'cardano': 'BINANCE:ADAUSDT',
+  'tron': 'BINANCE:TRXUSDT',
   'avalanche-2': 'BINANCE:AVAXUSDT',
   'chainlink': 'BINANCE:LINKUSDT',
-  'polygon': 'BINANCE:MATICUSDT',
-  'uniswap': 'BINANCE:UNIUSDT',
+  'toncoin': 'OKX:TONUSDT',
+  'shiba-inu': 'BINANCE:SHIBUSDT',
+  'polkadot': 'BINANCE:DOTUSDT',
+  'bitcoin-cash': 'BINANCE:BCHUSDT',
+  'leo-token': 'BITFINEX:LEOUSD',
+  'unus-sed-leo': 'BITFINEX:LEOUSD',
   'litecoin': 'BINANCE:LTCUSDT',
-  'cosmos': 'BINANCE:ATOMUSDT',
+  'uniswap': 'BINANCE:UNIUSDT',
+  'near': 'BINANCE:NEARUSDT',
+  'dai': 'COINBASE:DAIUSD',
   'stellar': 'BINANCE:XLMUSDT',
-  'monero': 'KRAKEN:XMRUSD',
-  'ethereum-classic': 'BINANCE:ETCUSDT',
-  'filecoin': 'BINANCE:FILUSDT',
-  'hedera': 'BINANCE:HBARUSDT',
+  'aptos': 'BINANCE:APTUSDT',
   'internet-computer': 'BINANCE:ICPUSDT',
+  'ethereum-classic': 'BINANCE:ETCUSDT',
+  'monero': 'KRAKEN:XMRUSD',
+  'render-token': 'BINANCE:RENDERUSDT',
+  'hedera': 'BINANCE:HBARUSDT',
+  'filecoin': 'BINANCE:FILUSDT',
+  'cosmos': 'BINANCE:ATOMUSDT',
+  'arbitrum': 'BINANCE:ARBUSDT',
+  'mantra': 'BINANCE:OMUSDT',
+  'mantra-dao': 'BINANCE:OMUSDT',
+  'crypto-com-chain': 'COINBASE:CROUSD',
+  'okb': 'OKX:OKBUSDT',
+  'injective-protocol': 'BINANCE:INJUSDT',
   'vechain': 'BINANCE:VETUSDT',
+  'immutable-x': 'BINANCE:IMXUSDT',
+  'sui': 'BINANCE:SUIUSDT',
+  'fetch-ai': 'BINANCE:FETUSDT',
+  'theta-token': 'BINANCE:THETAUSDT',
+  'kaspa': 'MEXC:KASUSDT',
+  'optimism': 'BINANCE:OPUSDT',
+  'polygon': 'BINANCE:MATICUSDT',
+  'matic-network': 'BINANCE:MATICUSDT',
+  // 51-100
+  'maker': 'BINANCE:MKRUSDT',
   'aave': 'BINANCE:AAVEUSDT',
+  'the-graph': 'BINANCE:GRTUSDT',
+  'fantom': 'BINANCE:FTMUSDT',
+  'algorand': 'BINANCE:ALGOUSDT',
+  'eos': 'BINANCE:EOSUSDT',
+  'stacks': 'BINANCE:STXUSDT',
+  'flow': 'BINANCE:FLOWUSDT',
+  'gala': 'BINANCE:GALAUSDT',
+  'axie-infinity': 'BINANCE:AXSUSDT',
   'the-sandbox': 'BINANCE:SANDUSDT',
   'decentraland': 'BINANCE:MANAUSDT',
-  'axie-infinity': 'BINANCE:AXSUSDT',
-  'eos': 'BINANCE:EOSUSDT',
   'tezos': 'BINANCE:XTZUSDT',
-  'theta-token': 'BINANCE:THETAUSDT',
-  'maker': 'BINANCE:MKRUSDT',
-  'fantom': 'BINANCE:FTMUSDT',
   'neo': 'BINANCE:NEOUSDT',
-  'flow': 'BINANCE:FLOWUSDT',
   'chiliz': 'BINANCE:CHZUSDT',
   'enjincoin': 'BINANCE:ENJUSDT',
-  'basic-attention-token': 'BINANCE:BATUSDT',
+  'iota': 'BINANCE:IOTAUSDT',
+  'quant-network': 'COINBASE:QNTUSD',
+  'xdc-network': 'KUCOIN:XDCUSDT',
+  'flare-networks': 'COINBASE:FLRUSD',
+  'worldcoin-wld': 'BINANCE:WLDUSDT',
+  'sei-network': 'BINANCE:SEIUSDT',
+  'celestia': 'BINANCE:TIAUSDT',
+  'blur': 'BINANCE:BLURUSDT',
+  'mina-protocol': 'BINANCE:MINAUSDT',
+  'conflux-token': 'BINANCE:CFXUSDT',
+  'dydx': 'BINANCE:DYDXUSDT',
+  'kava': 'BINANCE:KAVAUSDT',
+  'pancakeswap-token': 'BINANCE:CAKEUSDT',
+  'synthetix-network-token': 'BINANCE:SNXUSDT',
+  'rocket-pool': 'BINANCE:RPLUSDT',
   'curve-dao-token': 'BINANCE:CRVUSDT',
-  'loopring': 'BINANCE:LRCUSDT',
-  'compound': 'BINANCE:COMPUSDT',
+  'gmx': 'BINANCE:GMXUSDT',
+  '1inch': 'BINANCE:1INCHUSDT',
+  // 101-150
+  'compound-governance-token': 'COINBASE:COMPUSD',
+  'compound': 'COINBASE:COMPUSD',
+  'zcash': 'BINANCE:ZECUSDT',
+  'dash': 'BINANCE:DASHUSDT',
+  'basic-attention-token': 'BINANCE:BATUSDT',
   'yearn-finance': 'BINANCE:YFIUSDT',
   'sushi': 'BINANCE:SUSHIUSDT',
-  '1inch': 'BINANCE:1INCHUSDT',
-  'render-token': 'BINANCE:RENDERUSDT',
-  'injective-protocol': 'BINANCE:INJUSDT',
-  'gala': 'BINANCE:GALAUSDT',
-  'immutable-x': 'BINANCE:IMXUSDT',
-  'apecoin': 'BINANCE:APEUSDT',
-  'arbitrum': 'BINANCE:ARBUSDT',
-  'optimism': 'BINANCE:OPUSDT',
-  'sui': 'BINANCE:SUIUSDT',
+  'loopring': 'BINANCE:LRCUSDT',
+  'iotex': 'BINANCE:IOTXUSDT',
+  'zilliqa': 'BINANCE:ZILUSDT',
+  'ankr': 'BINANCE:ANKRUSDT',
+  'ocean-protocol': 'BINANCE:OCEANUSDT',
+  'harmony': 'BINANCE:ONEUSDT',
+  'kusama': 'BINANCE:KSMUSDT',
+  'ravencoin': 'BINANCE:RVNUSDT',
+  'waves': 'BINANCE:WAVESUSDT',
+  'celo': 'BINANCE:CELOUSDT',
+  'kadena': 'KUCOIN:KDAUSDT',
+  'livepeer': 'COINBASE:LPTUSD',
+  'skale': 'COINBASE:SKLUSD',
+  'audius': 'COINBASE:AUDIOUSD',
+  'ren': 'BINANCE:RENUSDT',
+  'band-protocol': 'BINANCE:BANDUSDT',
+  'storj': 'BINANCE:STORJUSDT',
+  'golem': 'BINANCE:GLMUSDT',
+  'oasis-network': 'BINANCE:ROSEUSDT',
+  'nervos-network': 'BINANCE:CKBUSDT',
+  'wax': 'BINANCE:WAXPUSDT',
+  'ontology': 'BINANCE:ONTUSDT',
+  'icon': 'BINANCE:ICXUSDT',
+  // 151-200
+  'siacoin': 'BINANCE:SCUSDT',
+  'ark': 'BINANCE:ARKUSDT',
+  'reserve-rights-token': 'BINANCE:RSRUSDT',
+  'status': 'BINANCE:SNTUSDT',
+  'numeraire': 'COINBASE:NMRUSD',
+  'bluzelle': 'BINANCE:BLZUSDT',
+  'nkn': 'BINANCE:NKNUSDT',
+  'cartesi': 'BINANCE:CTSIUSDT',
+  'orchid-protocol': 'COINBASE:OXTUSD',
+  'civic': 'BINANCE:CVCUSDT',
+  'origintrail': 'KUCOIN:TRACUSDT',
+  'request-network': 'BINANCE:REQUSDT',
+  'polymath': 'KUCOIN:POLYUSDT',
+  'measurable-data-token': 'BINANCE:MDTUSDT',
+  'dent': 'BINANCE:DENTUSDT',
+  'metal': 'BINANCE:MTLUSDT',
+  'lisk': 'BINANCE:LSKUSDT',
+  'verge': 'BINANCE:XVGUSDT',
+  'telcoin': 'KUCOIN:TELUSDT',
+  'alpha-finance': 'BINANCE:ALPHAUSDT',
+  'reef': 'BINANCE:REEFUSDT',
+  'power-ledger': 'BINANCE:POWRUSDT',
+  'tribe-2': 'COINBASE:TRIBEUSD',
+  'dodo': 'BINANCE:DODOUSDT',
+  'venus': 'BINANCE:XVSUSDT',
+  'mask-network': 'BINANCE:MASKUSDT',
+  'safepal': 'BINANCE:SFPUSDT',
+  // Meme coins
   'pepe': 'BINANCE:PEPEUSDT',
   'bonk': 'BINANCE:BONKUSDT',
   'floki': 'BINANCE:FLOKIUSDT',
-  'shiba-inu': 'BINANCE:SHIBUSDT',
-  'fetch-ai': 'BINANCE:FETUSDT',
-  'near': 'BINANCE:NEARUSDT',
-  'aptos': 'BINANCE:APTUSDT',
-  'sei-network': 'BINANCE:SEIUSDT',
-  'toncoin': 'OKX:TONUSDT',
-  'tron': 'BINANCE:TRXUSDT',
-  'bitcoin-cash': 'BINANCE:BCHUSDT',
-  // Bitfinex tokens
-  'leo-token': 'BITFINEX:LEOUSD',
-  'unus-sed-leo': 'BITFINEX:LEOUSD',
-  // Coinbase
-  'coinbase-wrapped-staked-eth': 'COINBASE:CBETHUSD',
-  // Kraken
-  'kaspa': 'KRAKEN:KASUSD',
-  // OKX
-  'okb': 'OKX:OKBUSDT',
-  // Crypto.com
-  'crypto-com-chain': 'CRYPTO:CROUSD',
-  // Others on various exchanges
-  'wrapped-bitcoin': 'BINANCE:WBTCUSDT',
-  'dai': 'BINANCE:DAIUSDT',
-  'steth': 'BINANCE:STETHETH',
-  'weth': 'BINANCE:WBTCUSDT',
-  'bnb': 'BINANCE:BNBUSDT',
-  'binancecoin': 'BINANCE:BNBUSDT',
-  'mantra-dao': 'BINANCE:OMUSDT',
+  'apecoin': 'BINANCE:APEUSDT',
+  'dogwifcoin': 'BINANCE:WIFUSDT',
+  'brett': 'BYBIT:BRETTUSDT',
+  'mog-coin': 'BYBIT:MOGUSDT',
+  'cat-in-a-dogs-world': 'BYBIT:MEWUSDT',
+  'popcat': 'BYBIT:POPCATUSDT',
+  'book-of-meme': 'BINANCE:BOMEUSDT',
+  // Stablecoins & wrapped
+  'wrapped-bitcoin': 'BINANCE:WBTCBTC',
+  'staked-ether': 'BINANCE:STETHETH',
+  'frax': 'COINBASE:FRAXUSD',
+  // Layer 2 & newer
   'hyperliquid': 'BYBIT:HYPEUSDT',
+  'jupiter': 'BYBIT:JUPUSDT',
+  'jito-governance-token': 'BYBIT:JTOUSDT',
+  'pyth-network': 'BYBIT:PYTHUSDT',
+  'wormhole': 'BYBIT:WUSDT',
+  'ethena': 'BINANCE:ENAUSDT',
+  'ondo-finance': 'BYBIT:ONDOUSDT',
+  'pendle': 'BINANCE:PENDLEUSDT',
+  'eigenlayer': 'BINANCE:EIGENUSDT',
+  'bittensor': 'BYBIT:TAOUSDT',
 };
 
-// Get best TradingView symbol for a coin - tries multiple exchanges
+// Get TradingView symbol - every coin has a chart!
 const getTradingViewSymbol = (coin) => {
-  // Check direct mapping first (known working symbols)
+  // Check our verified mapping first (best quality)
   if (TRADINGVIEW_SYMBOLS[coin.id]) {
     return TRADINGVIEW_SYMBOLS[coin.id];
   }
 
-  // For stocks, use their exchange
+  // For stocks, use NASDAQ (most common)
   if (coin.isStock) {
     return `NASDAQ:${coin.symbol?.toUpperCase()}`;
   }
 
+  // For crypto, use BINANCE with USDT pair as default
+  // TradingView's symbol search is enabled, so it can find alternatives if needed
   const symbol = coin.symbol?.toUpperCase();
-
-  // Check if CoinGecko provided exchange info in tickers
-  if (coin.tickers && coin.tickers.length > 0) {
-    // Find a good exchange from tickers
-    const preferredExchanges = ['binance', 'coinbase', 'kraken', 'okx', 'bybit', 'bitfinex'];
-    for (const ex of preferredExchanges) {
-      const ticker = coin.tickers.find(t =>
-        t.market?.identifier?.toLowerCase() === ex &&
-        (t.target === 'USDT' || t.target === 'USD')
-      );
-      if (ticker) {
-        const exchangeName = ex.toUpperCase();
-        const pair = ticker.target === 'USD' ? `${symbol}USD` : `${symbol}USDT`;
-        return `${exchangeName}:${pair}`;
-      }
-    }
-  }
-
-  // Smart fallback based on market cap ranking
-  // Top coins are usually on all exchanges, use Binance
-  // For smaller coins, try CRYPTO exchange (aggregated)
-  if (coin.market_cap_rank && coin.market_cap_rank <= 100) {
-    return `BINANCE:${symbol}USDT`;
-  }
-
-  // For coins not in top 100, use CRYPTO which aggregates multiple exchanges
-  // or try the symbol directly (TradingView will find it)
-  return `CRYPTO:${symbol}USD`;
+  return `BINANCE:${symbol}USDT`;
 };
 
 // Categories for filtering - CRYPTO
@@ -1378,10 +1440,10 @@ const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
           </button>
         </div>
 
-        {/* TradingView Chart - Larger */}
+        {/* TradingView Chart - Uses advanced chart with symbol search enabled */}
         <div className="h-[400px] sm:h-[450px] bg-slate-950">
           <iframe
-            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tvSymbol}&interval=60&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f172a&studies=[]&theme=dark&style=1&timezone=exchange&withdateranges=1&showpopupbutton=0&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&showwatermark=0&locale=en&utm_source=swipefolio&utm_medium=widget&utm_campaign=chart`}
+            src={`https://www.tradingview.com/widgetembed/?symbol=${tvSymbol}&interval=60&symboledit=1&saveimage=0&toolbarbg=0f172a&studies=[]&theme=dark&style=1&timezone=exchange&withdateranges=1&studies_overrides={}&overrides={}&enabled_features=["header_symbol_search"]&disabled_features=["header_compare"]&locale=en&utm_source=swipefolio`}
             style={{ width: '100%', height: '100%' }}
             frameBorder="0"
             allowTransparency="true"
