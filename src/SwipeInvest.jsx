@@ -1361,6 +1361,82 @@ const LandingPage = ({ onStart, stats }) => {
         />
       </div>
 
+      {/* Aurora Light Beams - Finex style curtains */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Main aurora curtains */}
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            background: `
+              radial-gradient(ellipse 80% 50% at 20% 0%, rgba(139,92,246,0.3) 0%, transparent 50%),
+              radial-gradient(ellipse 60% 40% at 40% 0%, rgba(168,85,247,0.25) 0%, transparent 45%),
+              radial-gradient(ellipse 70% 45% at 60% 0%, rgba(139,92,246,0.2) 0%, transparent 50%),
+              radial-gradient(ellipse 50% 35% at 80% 0%, rgba(99,102,241,0.25) 0%, transparent 40%)
+            `,
+          }}
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+
+        {/* Vertical light streaks */}
+        {[15, 30, 45, 55, 70, 85].map((left, i) => (
+          <motion.div
+            key={i}
+            className="absolute top-0"
+            style={{
+              left: `${left}%`,
+              width: '120px',
+              height: '70%',
+              background: `linear-gradient(180deg,
+                rgba(139,92,246,${0.15 + (i % 3) * 0.05}) 0%,
+                rgba(168,85,247,${0.1 + (i % 2) * 0.05}) 40%,
+                transparent 100%)`,
+              filter: 'blur(30px)',
+              transform: 'translateX(-50%)',
+            }}
+            animate={{
+              opacity: [0.4, 0.8, 0.4],
+              height: ['65%', '75%', '65%'],
+            }}
+            transition={{
+              duration: 5 + i * 0.8,
+              repeat: Infinity,
+              delay: i * 0.4,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+
+        {/* Accent streaks - brighter, thinner */}
+        {[25, 50, 75].map((left, i) => (
+          <motion.div
+            key={`accent-${i}`}
+            className="absolute top-0"
+            style={{
+              left: `${left}%`,
+              width: '4px',
+              height: '50%',
+              background: `linear-gradient(180deg,
+                rgba(168,85,247,0.8) 0%,
+                rgba(139,92,246,0.4) 50%,
+                transparent 100%)`,
+              filter: 'blur(2px)',
+              transform: 'translateX(-50%)',
+            }}
+            animate={{
+              opacity: [0.3, 0.7, 0.3],
+              height: ['45%', '55%', '45%'],
+            }}
+            transition={{
+              duration: 3 + i * 0.5,
+              repeat: Infinity,
+              delay: i * 0.6,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </div>
+
       {/* Floating Emojis */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {floatingEmojis.map((item, i) => (
@@ -1411,15 +1487,16 @@ const LandingPage = ({ onStart, stats }) => {
           </div>
         </motion.div>
 
-        {/* Title */}
+        {/* Title - Finex style with gradient accent */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-5xl md:text-7xl font-black text-center mb-4"
+          className="text-5xl md:text-7xl font-display font-bold text-center mb-4 tracking-tight"
         >
-          <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-            SwipeInvest
+          <span className="text-white">Swipe. </span>
+          <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
+            Invest.
           </span>
         </motion.h1>
 
@@ -1427,9 +1504,11 @@ const LandingPage = ({ onStart, stats }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="text-xl md:text-2xl text-slate-400 text-center mb-8 max-w-md"
+          className="text-lg md:text-xl text-slate-400 text-center mb-8 max-w-lg leading-relaxed"
         >
-          Tinder for Investments. Swipe crypto & stocks. Build your portfolio.
+          Your all-in-one app for discovering crypto and stocks.
+          <br className="hidden sm:block" />
+          Swipe right to invest. Build your portfolio effortlessly.
         </motion.p>
 
         {/* Features */}
