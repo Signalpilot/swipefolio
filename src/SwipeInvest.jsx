@@ -2298,9 +2298,64 @@ export default function SwipeInvest() {
 
   // Main Swipe View
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col relative overflow-hidden">
-      {/* Epic Background Effects */}
-      <FloatingSparkles count={25} />
+    <div className="min-h-screen text-white flex flex-col relative overflow-hidden"
+      style={{
+        background: 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
+      }}
+    >
+      {/* Aurora Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Radial glow spots */}
+        <div
+          className="absolute top-0 left-1/4 w-[500px] h-[400px] opacity-30"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.4) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
+        <div
+          className="absolute top-1/3 right-1/4 w-[400px] h-[300px] opacity-25"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.3) 0%, transparent 70%)',
+            filter: 'blur(50px)',
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 left-1/3 w-[350px] h-[350px] opacity-20"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.35) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+          }}
+        />
+
+        {/* Vertical aurora streaks */}
+        {[20, 40, 60, 80].map((left, i) => (
+          <motion.div
+            key={i}
+            className="absolute top-0"
+            style={{
+              left: `${left}%`,
+              width: '100px',
+              height: '60%',
+              background: `linear-gradient(180deg,
+                rgba(139,92,246,0.15) 0%,
+                rgba(168,85,247,0.08) 50%,
+                transparent 100%)`,
+              filter: 'blur(25px)',
+              transform: 'translateX(-50%)',
+            }}
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{
+              duration: 4 + i,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Floating Sparkles */}
+      <FloatingSparkles count={20} />
 
       {/* Confetti Explosion on APE! */}
       <Confetti trigger={confettiTrigger} type="ape" />
@@ -2333,13 +2388,25 @@ export default function SwipeInvest() {
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <header className="flex justify-between items-center p-4 border-b border-white/10">
+      {/* Header - Glassmorphism */}
+      <header
+        className="relative z-10 flex justify-between items-center p-4 border-b border-white/[0.08]"
+        style={{
+          background: 'rgba(15,23,42,0.7)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
+        }}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg"
+            style={{ boxShadow: '0 8px 20px rgba(168,85,247,0.4)' }}
+          >
             <span className="text-xl">{assetType === 'crypto' ? '🪙' : '📈'}</span>
-          </div>
-          <span className="text-xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:inline">
+          </motion.div>
+          <span className="text-xl font-display font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:inline">
             SwipeInvest
           </span>
           {/* Asset Type Toggle */}
@@ -2402,21 +2469,33 @@ export default function SwipeInvest() {
         </div>
       </header>
 
-      {/* Category Pills */}
-      <div className="flex gap-2 p-3 overflow-x-auto scrollbar-hide border-b border-white/5">
+      {/* Category Pills - Glassmorphism */}
+      <div
+        className="relative z-10 flex gap-2 p-3 overflow-x-auto scrollbar-hide"
+        style={{
+          background: 'rgba(15,23,42,0.5)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
         {currentCategories.map(cat => (
-          <button
+          <motion.button
             key={cat.id}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => { setSelectedCategory(cat.id); setCurrentIndex(0); setHistory([]); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full whitespace-nowrap transition text-sm font-medium ${
-              selectedCategory === cat.id
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all"
+            style={selectedCategory === cat.id ? {
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+              boxShadow: '0 4px 15px rgba(139,92,246,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset',
+            } : {
+              background: 'rgba(30,41,59,0.8)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
           >
             <span>{cat.emoji}</span>
-            <span>{cat.label}</span>
-          </button>
+            <span className={selectedCategory === cat.id ? 'text-white' : 'text-slate-300'}>{cat.label}</span>
+          </motion.button>
         ))}
       </div>
 
@@ -2473,9 +2552,14 @@ export default function SwipeInvest() {
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Glassmorphism Bar */}
       {currentIndex < filteredCoins.length && (
-        <div className="flex justify-center items-center gap-4 p-4">
+        <div
+          className="relative z-10 flex justify-center items-center gap-4 p-4 pb-6"
+          style={{
+            background: 'linear-gradient(180deg, transparent 0%, rgba(15,23,42,0.8) 30%)',
+          }}
+        >
           {/* Undo */}
           <motion.button
             whileTap={{ scale: 0.9 }}
