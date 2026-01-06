@@ -486,13 +486,15 @@ const CRYPTO_CATEGORIES = [
   { id: 'all', label: 'All', emoji: '🔥' },
   { id: 'top50', label: 'Top 50', emoji: '🏆' },
   { id: 'top100', label: 'Top 100', emoji: '💯' },
-  { id: 'top200', label: 'Top 200', emoji: '📊' },
   { id: 'trending', label: 'Trending', emoji: '📈' },
   { id: 'meme', label: 'Meme', emoji: '🐸' },
-  { id: 'defi', label: 'DeFi', emoji: '🏦' },
   { id: 'ai', label: 'AI', emoji: '🤖' },
+  { id: 'gaming', label: 'Gaming', emoji: '🎮' },
+  { id: 'defi', label: 'DeFi', emoji: '🏦' },
   { id: 'l1', label: 'L1', emoji: '⛓️' },
   { id: 'l2', label: 'L2', emoji: '🔷' },
+  { id: 'nft', label: 'NFT', emoji: '🖼️' },
+  { id: 'privacy', label: 'Privacy', emoji: '🕵️' },
   { id: 'bluechip', label: 'Blue Chip', emoji: '💎' },
 ];
 
@@ -501,11 +503,15 @@ const STOCK_CATEGORIES = [
   { id: 'all', label: 'All', emoji: '🔥' },
   { id: 'trending', label: 'Trending', emoji: '📈' },
   { id: 'tech', label: 'Tech', emoji: '💻' },
+  { id: 'ai', label: 'AI', emoji: '🤖' },
   { id: 'finance', label: 'Finance', emoji: '🏦' },
   { id: 'healthcare', label: 'Health', emoji: '🏥' },
   { id: 'energy', label: 'Energy', emoji: '⚡' },
+  { id: 'retail', label: 'Retail', emoji: '🛒' },
+  { id: 'auto', label: 'Auto', emoji: '🚗' },
   { id: 'meme', label: 'Meme', emoji: '🚀' },
   { id: 'dividend', label: 'Dividend', emoji: '💰' },
+  { id: 'bluechip', label: 'Blue Chip', emoji: '💎' },
 ];
 
 // Popular stocks to track (symbol -> metadata)
@@ -714,6 +720,121 @@ const STOCK_LIST = [
   { symbol: 'OPEN', name: 'Opendoor', sector: 'realestate', category: ['meme'] },
   { symbol: 'UPST', name: 'Upstart', sector: 'finance', category: ['meme', 'ai'] },
   { symbol: 'AFRM', name: 'Affirm', sector: 'finance', category: ['tech', 'meme'] },
+  // More Tech
+  { symbol: 'AVGO', name: 'Broadcom', sector: 'tech', category: ['tech', 'ai', 'bluechip', 'dividend'] },
+  { symbol: 'CSCO', name: 'Cisco', sector: 'tech', category: ['tech', 'dividend'] },
+  { symbol: 'QCOM', name: 'Qualcomm', sector: 'tech', category: ['tech', 'ai', 'dividend'] },
+  { symbol: 'TXN', name: 'Texas Instruments', sector: 'tech', category: ['tech', 'dividend'] },
+  { symbol: 'MU', name: 'Micron', sector: 'tech', category: ['tech', 'ai'] },
+  { symbol: 'LRCX', name: 'Lam Research', sector: 'tech', category: ['tech', 'ai'] },
+  { symbol: 'AMAT', name: 'Applied Materials', sector: 'tech', category: ['tech', 'ai'] },
+  { symbol: 'KLAC', name: 'KLA Corp', sector: 'tech', category: ['tech', 'ai'] },
+  { symbol: 'MRVL', name: 'Marvell', sector: 'tech', category: ['tech', 'ai'] },
+  { symbol: 'NOW', name: 'ServiceNow', sector: 'tech', category: ['tech', 'ai'] },
+  { symbol: 'PANW', name: 'Palo Alto Networks', sector: 'tech', category: ['tech'] },
+  { symbol: 'CRWD', name: 'CrowdStrike', sector: 'tech', category: ['tech'] },
+  { symbol: 'ZS', name: 'Zscaler', sector: 'tech', category: ['tech'] },
+  { symbol: 'FTNT', name: 'Fortinet', sector: 'tech', category: ['tech'] },
+  { symbol: 'DDOG', name: 'Datadog', sector: 'tech', category: ['tech'] },
+  { symbol: 'NET', name: 'Cloudflare', sector: 'tech', category: ['tech', 'trending'] },
+  { symbol: 'TEAM', name: 'Atlassian', sector: 'tech', category: ['tech'] },
+  { symbol: 'TWLO', name: 'Twilio', sector: 'tech', category: ['tech'] },
+  { symbol: 'TTD', name: 'Trade Desk', sector: 'tech', category: ['tech'] },
+  { symbol: 'ROKU', name: 'Roku', sector: 'tech', category: ['tech', 'meme'] },
+  { symbol: 'ZM', name: 'Zoom', sector: 'tech', category: ['tech'] },
+  { symbol: 'DOCU', name: 'DocuSign', sector: 'tech', category: ['tech'] },
+  // More AI
+  { symbol: 'SMCI', name: 'Super Micro', sector: 'tech', category: ['tech', 'ai', 'trending'] },
+  { symbol: 'ARM', name: 'ARM Holdings', sector: 'tech', category: ['tech', 'ai'] },
+  { symbol: 'IONQ', name: 'IonQ', sector: 'tech', category: ['tech', 'ai', 'meme'] },
+  { symbol: 'RGTI', name: 'Rigetti', sector: 'tech', category: ['tech', 'ai', 'meme'] },
+  { symbol: 'SOUN', name: 'SoundHound', sector: 'tech', category: ['tech', 'ai', 'meme'] },
+  { symbol: 'BBAI', name: 'BigBear.ai', sector: 'tech', category: ['tech', 'ai', 'meme'] },
+  { symbol: 'SERV', name: 'Serve Robotics', sector: 'tech', category: ['tech', 'ai', 'meme'] },
+  // Retail
+  { symbol: 'WMT', name: 'Walmart', sector: 'retail', category: ['retail', 'bluechip', 'dividend'] },
+  { symbol: 'COST', name: 'Costco', sector: 'retail', category: ['retail', 'bluechip'] },
+  { symbol: 'HD', name: 'Home Depot', sector: 'retail', category: ['retail', 'dividend', 'bluechip'] },
+  { symbol: 'LOW', name: 'Lowes', sector: 'retail', category: ['retail', 'dividend'] },
+  { symbol: 'TGT', name: 'Target', sector: 'retail', category: ['retail', 'dividend'] },
+  { symbol: 'DG', name: 'Dollar General', sector: 'retail', category: ['retail'] },
+  { symbol: 'DLTR', name: 'Dollar Tree', sector: 'retail', category: ['retail'] },
+  { symbol: 'ROSS', name: 'Ross Stores', sector: 'retail', category: ['retail'] },
+  { symbol: 'TJX', name: 'TJX Companies', sector: 'retail', category: ['retail', 'dividend'] },
+  { symbol: 'NKE', name: 'Nike', sector: 'retail', category: ['retail', 'bluechip'] },
+  { symbol: 'LULU', name: 'Lululemon', sector: 'retail', category: ['retail'] },
+  { symbol: 'DECK', name: 'Deckers', sector: 'retail', category: ['retail'] },
+  { symbol: 'CROX', name: 'Crocs', sector: 'retail', category: ['retail', 'meme'] },
+  { symbol: 'ETSY', name: 'Etsy', sector: 'retail', category: ['retail', 'tech'] },
+  { symbol: 'EBAY', name: 'eBay', sector: 'retail', category: ['retail', 'tech'] },
+  // Auto & EV
+  { symbol: 'GM', name: 'General Motors', sector: 'auto', category: ['auto', 'dividend'] },
+  { symbol: 'F', name: 'Ford', sector: 'auto', category: ['auto', 'dividend'] },
+  { symbol: 'TM', name: 'Toyota', sector: 'auto', category: ['auto', 'dividend', 'bluechip'] },
+  { symbol: 'RACE', name: 'Ferrari', sector: 'auto', category: ['auto'] },
+  { symbol: 'STLA', name: 'Stellantis', sector: 'auto', category: ['auto', 'dividend'] },
+  { symbol: 'HMC', name: 'Honda', sector: 'auto', category: ['auto', 'dividend'] },
+  // Consumer & Food
+  { symbol: 'KO', name: 'Coca-Cola', sector: 'consumer', category: ['dividend', 'bluechip'] },
+  { symbol: 'PEP', name: 'PepsiCo', sector: 'consumer', category: ['dividend', 'bluechip'] },
+  { symbol: 'MCD', name: 'McDonalds', sector: 'consumer', category: ['dividend', 'bluechip'] },
+  { symbol: 'SBUX', name: 'Starbucks', sector: 'consumer', category: ['dividend'] },
+  { symbol: 'YUM', name: 'Yum Brands', sector: 'consumer', category: ['dividend'] },
+  { symbol: 'CMG', name: 'Chipotle', sector: 'consumer', category: ['retail'] },
+  { symbol: 'DPZ', name: 'Dominos', sector: 'consumer', category: ['retail'] },
+  { symbol: 'PG', name: 'Procter & Gamble', sector: 'consumer', category: ['dividend', 'bluechip'] },
+  { symbol: 'CL', name: 'Colgate-Palmolive', sector: 'consumer', category: ['dividend'] },
+  { symbol: 'KMB', name: 'Kimberly-Clark', sector: 'consumer', category: ['dividend'] },
+  // Industrials
+  { symbol: 'CAT', name: 'Caterpillar', sector: 'industrial', category: ['dividend', 'bluechip'] },
+  { symbol: 'DE', name: 'John Deere', sector: 'industrial', category: ['dividend'] },
+  { symbol: 'HON', name: 'Honeywell', sector: 'industrial', category: ['dividend', 'bluechip'] },
+  { symbol: 'UNP', name: 'Union Pacific', sector: 'industrial', category: ['dividend'] },
+  { symbol: 'UPS', name: 'UPS', sector: 'industrial', category: ['dividend'] },
+  { symbol: 'FDX', name: 'FedEx', sector: 'industrial', category: ['dividend'] },
+  { symbol: 'GE', name: 'GE Aerospace', sector: 'industrial', category: ['dividend', 'bluechip'] },
+  { symbol: 'RTX', name: 'RTX', sector: 'industrial', category: ['dividend'] },
+  { symbol: 'LMT', name: 'Lockheed Martin', sector: 'industrial', category: ['dividend'] },
+  { symbol: 'NOC', name: 'Northrop Grumman', sector: 'industrial', category: ['dividend'] },
+  { symbol: 'BA', name: 'Boeing', sector: 'industrial', category: ['bluechip'] },
+  // Telecom
+  { symbol: 'T', name: 'AT&T', sector: 'telecom', category: ['dividend'] },
+  { symbol: 'VZ', name: 'Verizon', sector: 'telecom', category: ['dividend'] },
+  { symbol: 'TMUS', name: 'T-Mobile', sector: 'telecom', category: [] },
+  // More Biotech & Pharma
+  { symbol: 'GILD', name: 'Gilead', sector: 'healthcare', category: ['healthcare', 'dividend'] },
+  { symbol: 'AMGN', name: 'Amgen', sector: 'healthcare', category: ['healthcare', 'dividend', 'bluechip'] },
+  { symbol: 'REGN', name: 'Regeneron', sector: 'healthcare', category: ['healthcare'] },
+  { symbol: 'VRTX', name: 'Vertex Pharma', sector: 'healthcare', category: ['healthcare'] },
+  { symbol: 'BIIB', name: 'Biogen', sector: 'healthcare', category: ['healthcare'] },
+  { symbol: 'MRNA', name: 'Moderna', sector: 'healthcare', category: ['healthcare', 'meme'] },
+  { symbol: 'BNTX', name: 'BioNTech', sector: 'healthcare', category: ['healthcare'] },
+  // More Finance
+  { symbol: 'SCHW', name: 'Charles Schwab', sector: 'finance', category: ['finance'] },
+  { symbol: 'BLK', name: 'BlackRock', sector: 'finance', category: ['finance', 'bluechip'] },
+  { symbol: 'SPGI', name: 'S&P Global', sector: 'finance', category: ['finance'] },
+  { symbol: 'ICE', name: 'Intercontinental Exchange', sector: 'finance', category: ['finance'] },
+  { symbol: 'CME', name: 'CME Group', sector: 'finance', category: ['finance', 'dividend'] },
+  { symbol: 'MCO', name: 'Moodys', sector: 'finance', category: ['finance'] },
+  { symbol: 'TFC', name: 'Truist', sector: 'finance', category: ['finance', 'dividend'] },
+  { symbol: 'PNC', name: 'PNC Financial', sector: 'finance', category: ['finance', 'dividend'] },
+  { symbol: 'USB', name: 'US Bancorp', sector: 'finance', category: ['finance', 'dividend'] },
+  // Crypto-related stocks
+  { symbol: 'COIN', name: 'Coinbase', sector: 'finance', category: ['finance', 'tech', 'trending'] },
+  { symbol: 'MSTR', name: 'MicroStrategy', sector: 'tech', category: ['tech', 'meme', 'trending'] },
+  { symbol: 'MARA', name: 'Marathon Digital', sector: 'tech', category: ['tech', 'meme', 'trending'] },
+  { symbol: 'RIOT', name: 'Riot Platforms', sector: 'tech', category: ['tech', 'meme', 'trending'] },
+  { symbol: 'CLSK', name: 'CleanSpark', sector: 'tech', category: ['tech', 'meme'] },
+  { symbol: 'HUT', name: 'Hut 8 Mining', sector: 'tech', category: ['tech', 'meme'] },
+  // ETFs (popular trading)
+  { symbol: 'SPY', name: 'S&P 500 ETF', sector: 'etf', category: ['bluechip'] },
+  { symbol: 'QQQ', name: 'Nasdaq 100 ETF', sector: 'etf', category: ['tech', 'bluechip'] },
+  { symbol: 'IWM', name: 'Russell 2000 ETF', sector: 'etf', category: [] },
+  { symbol: 'DIA', name: 'Dow Jones ETF', sector: 'etf', category: ['bluechip'] },
+  { symbol: 'ARKK', name: 'ARK Innovation', sector: 'etf', category: ['tech', 'ai', 'meme'] },
+  { symbol: 'SOXL', name: 'Semis 3x Bull', sector: 'etf', category: ['tech', 'ai', 'meme'] },
+  { symbol: 'TQQQ', name: 'Nasdaq 3x Bull', sector: 'etf', category: ['tech', 'meme'] },
+  { symbol: 'SQQQ', name: 'Nasdaq 3x Bear', sector: 'etf', category: ['meme'] },
 ];
 
 // For backwards compatibility
@@ -939,34 +1060,53 @@ const getRiskLevel = (marketCap) => {
 const getCoinCategory = (coin) => {
   const id = coin.id?.toLowerCase() || '';
   const name = coin.name?.toLowerCase() || '';
+  const symbol = coin.symbol?.toLowerCase() || '';
   const categories = [];
 
   // Meme coins
-  const memeKeywords = ['doge', 'shib', 'pepe', 'floki', 'bonk', 'wojak', 'meme', 'inu', 'elon', 'moon', 'safe'];
-  if (memeKeywords.some(k => id.includes(k) || name.includes(k))) {
+  const memeKeywords = ['doge', 'shib', 'pepe', 'floki', 'bonk', 'wojak', 'meme', 'inu', 'elon', 'moon', 'safe', 'cat', 'frog', 'popcat', 'brett', 'mog', 'turbo', 'ladys', 'milady', 'andy', 'chad', 'coq', 'myro', 'wen', 'book', 'bome', 'slerf', 'pork', 'neiro', 'goat', 'act', 'pnut', 'chillguy'];
+  if (memeKeywords.some(k => id.includes(k) || name.includes(k) || symbol.includes(k))) {
     categories.push('meme');
   }
 
   // AI coins
-  const aiKeywords = ['render', 'fetch', 'singularity', 'ocean', 'ai', 'neural', 'gpt', 'bittensor'];
+  const aiKeywords = ['render', 'fetch', 'singularity', 'ocean', 'ai', 'neural', 'gpt', 'bittensor', 'worldcoin', 'akash', 'tau', 'cortex', 'numeraire', 'virtual', 'agent', 'griffain', 'fartcoin', 'zerebro', 'phala', 'io-net', 'nosana', 'grass', 'golem'];
   if (aiKeywords.some(k => id.includes(k) || name.includes(k))) {
     categories.push('ai');
   }
 
+  // Gaming / GameFi
+  const gamingKeywords = ['axie', 'sandbox', 'decentraland', 'gala', 'enjin', 'immutable', 'illuvium', 'beam', 'prime', 'pixel', 'super', 'hero', 'ronin', 'wemix', 'magic', 'treasure', 'bigtime', 'game', 'play', 'guild'];
+  if (gamingKeywords.some(k => id.includes(k) || name.includes(k))) {
+    categories.push('gaming');
+  }
+
+  // NFT / Metaverse
+  const nftKeywords = ['ape', 'blur', 'looks', 'x2y2', 'nft', 'meta', 'verse', 'land', 'world', 'virtual', 'decentraland', 'sandbox', 'otherside', 'pudgy'];
+  if (nftKeywords.some(k => id.includes(k) || name.includes(k))) {
+    categories.push('nft');
+  }
+
+  // Privacy coins
+  const privacyKeywords = ['monero', 'zcash', 'dash', 'secret', 'oasis', 'horizen', 'firo', 'haven', 'pirate', 'dero', 'ergo', 'iron', 'beam', 'grin'];
+  if (privacyKeywords.some(k => id.includes(k) || name.includes(k))) {
+    categories.push('privacy');
+  }
+
   // DeFi
-  const defiIds = ['uniswap', 'aave', 'compound', 'maker', 'curve', 'sushi', 'pancake', 'lido', 'rocket-pool'];
-  if (defiIds.some(d => id.includes(d))) {
+  const defiKeywords = ['uniswap', 'aave', 'compound', 'maker', 'curve', 'sushi', 'pancake', 'lido', 'rocket', 'yearn', 'synthetix', 'balancer', '1inch', 'dydx', 'gmx', 'raydium', 'jupiter', 'orca', 'marinade', 'jito', 'kamino', 'drift', 'pendle', 'ethena', 'usual', 'morpho', 'fluid', 'cow', 'aerodrome'];
+  if (defiKeywords.some(d => id.includes(d) || name.includes(d))) {
     categories.push('defi');
   }
 
   // L1s
-  const l1Ids = ['bitcoin', 'ethereum', 'solana', 'cardano', 'avalanche', 'sui', 'near', 'aptos', 'sei'];
+  const l1Ids = ['bitcoin', 'ethereum', 'solana', 'cardano', 'avalanche', 'sui', 'near', 'aptos', 'sei', 'ton', 'tron', 'cosmos', 'polkadot', 'algorand', 'hedera', 'fantom', 'flow', 'kaspa', 'injective', 'celestia', 'berachain', 'monad', 'movement'];
   if (l1Ids.some(l => id.includes(l))) {
     categories.push('l1');
   }
 
   // L2s
-  const l2Ids = ['arbitrum', 'optimism', 'polygon', 'base', 'zksync', 'starknet', 'mantle'];
+  const l2Ids = ['arbitrum', 'optimism', 'polygon', 'base', 'zksync', 'starknet', 'mantle', 'scroll', 'linea', 'blast', 'mode', 'manta', 'zora', 'metis', 'boba'];
   if (l2Ids.some(l => id.includes(l))) {
     categories.push('l2');
   }
@@ -980,10 +1120,9 @@ const getCoinCategory = (coin) => {
   const rank = coin.market_cap_rank;
   if (rank && rank <= 50) categories.push('top50');
   if (rank && rank <= 100) categories.push('top100');
-  if (rank && rank <= 200) categories.push('top200');
 
   // Trending (high 24h volume relative to mcap or big price move)
-  if (coin.price_change_percentage_24h > 10 ||
+  if (coin.price_change_percentage_24h > 10 || coin.price_change_percentage_24h < -10 ||
       (coin.total_volume > coin.market_cap * 0.15)) {
     categories.push('trending');
   }
