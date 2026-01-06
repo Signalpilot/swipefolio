@@ -396,7 +396,7 @@ const getStockVibes = (stock) => {
   const stockMeta = STOCK_LIST.find(s => s.symbol === stock.symbol);
 
   if (categories.includes('trending')) vibes.push({ text: 'Trending', emoji: '🔥', color: 'from-orange-500 to-red-500' });
-  if (categories.includes('ai')) vibes.push({ text: 'AI', emoji: '🤖', color: 'from-purple-500 to-pink-500' });
+  if (categories.includes('ai')) vibes.push({ text: 'AI', emoji: '🤖', color: 'from-blue-500 to-cyan-500' });
   if (categories.includes('meme')) vibes.push({ text: 'Meme', emoji: '🚀', color: 'from-green-500 to-emerald-500' });
   if (categories.includes('tech')) vibes.push({ text: 'Tech', emoji: '💻', color: 'from-blue-500 to-cyan-500' });
   if (categories.includes('finance')) vibes.push({ text: 'Finance', emoji: '🏦', color: 'from-yellow-500 to-orange-500' });
@@ -495,7 +495,7 @@ const getRiskLevel = (marketCap) => {
   if (marketCap > 10000000000) return { emoji: '🟢', label: 'Large Cap', color: 'text-green-400', bg: 'bg-green-500/20' };
   if (marketCap > 1000000000) return { emoji: '🟡', label: 'Mid Cap', color: 'text-yellow-400', bg: 'bg-yellow-500/20' };
   if (marketCap > 100000000) return { emoji: '🟠', label: 'Small Cap', color: 'text-orange-400', bg: 'bg-orange-500/20' };
-  return { emoji: '💀', label: 'Degen', color: 'text-purple-400', bg: 'bg-purple-500/20' };
+  return { emoji: '💀', label: 'Degen', color: 'text-blue-400', bg: 'bg-blue-500/20' };
 };
 
 const getCoinCategory = (coin) => {
@@ -557,11 +557,11 @@ const getVibes = (asset) => {
   const categories = getCoinCategory(asset);
 
   if (categories.includes('trending')) vibes.push({ text: 'Trending', emoji: '🔥', color: 'from-orange-500 to-red-500' });
-  if (categories.includes('ai')) vibes.push({ text: 'AI', emoji: '🤖', color: 'from-purple-500 to-pink-500' });
+  if (categories.includes('ai')) vibes.push({ text: 'AI', emoji: '🤖', color: 'from-blue-500 to-cyan-500' });
   if (categories.includes('meme')) vibes.push({ text: 'Meme', emoji: '🐸', color: 'from-green-500 to-emerald-500' });
   if (categories.includes('defi')) vibes.push({ text: 'DeFi', emoji: '🏦', color: 'from-blue-500 to-cyan-500' });
   if (categories.includes('l1')) vibes.push({ text: 'L1', emoji: '⛓️', color: 'from-yellow-500 to-orange-500' });
-  if (categories.includes('l2')) vibes.push({ text: 'L2', emoji: '🔷', color: 'from-indigo-500 to-purple-500' });
+  if (categories.includes('l2')) vibes.push({ text: 'L2', emoji: '🔷', color: 'from-indigo-500 to-blue-500' });
 
   if (asset.price_change_percentage_24h > 20) vibes.push({ text: 'Pumping', emoji: '🚀', color: 'from-green-400 to-emerald-400' });
   if (asset.price_change_percentage_24h < -15) vibes.push({ text: 'Dipping', emoji: '📉', color: 'from-red-500 to-pink-500' });
@@ -854,8 +854,8 @@ const Confetti = ({ trigger, type = 'ape' }) => {
     if (!trigger) return;
 
     const colors = type === 'ape'
-      ? ['#22c55e', '#4ade80', '#86efac', '#fbbf24', '#f59e0b', '#a855f7'] // Green + gold
-      : ['#ef4444', '#f87171', '#fca5a5', '#a855f7', '#c084fc']; // Red + purple
+      ? ['#22c55e', '#4ade80', '#86efac', '#fbbf24', '#f59e0b', '#5b8aff'] // Green + gold + blue
+      : ['#ef4444', '#f87171', '#fca5a5', '#5b8aff', '#76ddff']; // Red + blue
 
     const newParticles = Array.from({ length: 50 }, (_, i) => ({
       id: `${Date.now()}-${i}`,
@@ -919,7 +919,7 @@ const FloatingSparkles = ({ count = 20 }) => {
       top: `${Math.random() * 100}%`,
       delay: Math.random() * 5,
       duration: 3 + Math.random() * 4,
-      size: 2 + Math.random() * 4,
+      size: 1 + Math.random() * 2,
     })), [count]);
 
   return (
@@ -927,13 +927,17 @@ const FloatingSparkles = ({ count = 20 }) => {
       {sparkles.map((s) => (
         <motion.div
           key={s.id}
-          className="absolute rounded-full bg-gradient-to-r from-purple-400 to-cyan-400"
-          style={{ left: s.left, top: s.top, width: s.size, height: s.size }}
+          className="absolute rounded-full"
+          style={{
+            left: s.left,
+            top: s.top,
+            width: s.size,
+            height: s.size,
+            background: 'rgba(91,138,255,0.6)',
+          }}
           animate={{
-            y: [-20, 20, -20],
-            x: [-10, 10, -10],
-            opacity: [0.2, 0.8, 0.2],
-            scale: [0.8, 1.2, 0.8],
+            y: [-10, 10, -10],
+            opacity: [0.2, 0.6, 0.2],
           }}
           transition={{
             duration: s.duration,
@@ -948,11 +952,11 @@ const FloatingSparkles = ({ count = 20 }) => {
 };
 
 // Pulse Ring Effect for buttons
-const PulseRings = ({ active, color = 'purple' }) => {
+const PulseRings = ({ active, color = 'blue' }) => {
   if (!active) return null;
 
   const colorClasses = {
-    purple: 'border-purple-500',
+    blue: 'border-blue-500',
     green: 'border-green-500',
     red: 'border-red-500',
     gold: 'border-yellow-400',
@@ -1017,9 +1021,9 @@ const SwipeTrail = ({ direction }) => {
 };
 
 // Glow Text Effect
-const GlowText = ({ children, color = 'purple', className = '' }) => {
+const GlowText = ({ children, color = 'blue', className = '' }) => {
   const glowColors = {
-    purple: 'text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]',
+    blue: 'text-blue-400 drop-shadow-[0_0_15px_rgba(91,138,255,0.8)]',
     green: 'text-green-400 drop-shadow-[0_0_15px_rgba(34,197,94,0.8)]',
     red: 'text-red-400 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]',
     gold: 'text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]',
@@ -1099,11 +1103,11 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
         style={{
           background: 'linear-gradient(145deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 100%)',
           backdropFilter: 'blur(24px)',
-          boxShadow: '0 24px 48px -8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05) inset, 0 -20px 40px -20px rgba(139,92,246,0.15) inset',
+          boxShadow: '0 24px 48px -8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05) inset, 0 -20px 40px -20px rgba(91,138,255,0.15) inset',
         }}
       >
         {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/[0.08] via-transparent to-cyan-500/[0.05] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.08] via-transparent to-cyan-500/[0.05] pointer-events-none" />
 
         {/* APE Stamp */}
         <motion.div
@@ -1197,7 +1201,7 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
                   draggable={false}
                   onError={(e) => {
                     e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `<span class="text-3xl font-black bg-gradient-to-br from-purple-400 to-pink-400 bg-clip-text text-transparent">${coin.symbol?.toUpperCase().slice(0,3) || '?'}</span>`;
+                    e.target.parentElement.innerHTML = `<span class="text-3xl font-black bg-gradient-to-br from-blue-400 to-cyan-400 bg-clip-text text-transparent">${coin.symbol?.toUpperCase().slice(0,3) || '?'}</span>`;
                   }}
                 />
               </div>
@@ -1240,13 +1244,13 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
                       e.stopPropagation();
                       onTap(coin);
                     }}
-                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 active:scale-95 transition-transform touch-manipulation"
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 active:scale-95 transition-transform touch-manipulation"
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
-                    <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                     </svg>
-                    <span className="text-[10px] font-medium text-purple-400">View Chart</span>
+                    <span className="text-[10px] font-medium text-blue-400">View Chart</span>
                   </button>
                 </div>
               )}
@@ -1650,7 +1654,7 @@ const DailyPrediction = ({ coins, onVote, userVote }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 backdrop-blur-sm rounded-2xl p-4 border border-purple-500/20"
+      className="bg-gradient-to-br from-blue-900/40 to-cyan-900/40 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/20"
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -1661,7 +1665,7 @@ const DailyPrediction = ({ coins, onVote, userVote }) => {
       </div>
 
       <p className="text-sm text-slate-300 mb-3">
-        Will <span className="font-bold text-purple-300">${featuredCoin.symbol.toUpperCase()}</span> hit{' '}
+        Will <span className="font-bold text-blue-300">${featuredCoin.symbol.toUpperCase()}</span> hit{' '}
         <span className="font-bold text-white">{formatPrice(targetPrice)}</span> this week?
       </p>
 
@@ -1776,8 +1780,8 @@ const Leaderboard = ({ portfolio }) => {
       </div>
 
       {/* User rank */}
-      <div className="bg-purple-500/20 rounded-lg p-2 flex items-center gap-3 border border-purple-500/30">
-        <span className="text-sm font-bold text-purple-400">#{userRank}</span>
+      <div className="bg-blue-500/20 rounded-lg p-2 flex items-center gap-3 border border-blue-500/30">
+        <span className="text-sm font-bold text-blue-400">#{userRank}</span>
         <span className="text-sm">😎</span>
         <span className="text-sm font-medium flex-1">You</span>
         <span className={`text-sm font-bold ${userGain > 0 ? 'text-green-400' : 'text-slate-400'}`}>
@@ -1806,37 +1810,42 @@ const LandingPage = ({ onStart, stats }) => {
   ], []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900 text-white overflow-hidden">
-      {/* Animated background */}
+    <div className="min-h-screen text-white overflow-hidden" style={{ background: '#05070d' }}>
+      {/* Starfield Background */}
+      <div className="starfield">
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div key={i} className="star" style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            width: `${Math.random() * 2 + 1}px`,
+            height: `${Math.random() * 2 + 1}px`,
+            animationDelay: `${Math.random() * 3}s`,
+          }} />
+        ))}
+      </div>
+
+      {/* Subtle blue accent glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
           transition={{ duration: 4, repeat: Infinity }}
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl"
         />
         <motion.div
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.15, 0.25, 0.15] }}
           transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/30 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
-          className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
         />
       </div>
 
-      {/* Aurora Light Beams - Finex style curtains */}
+      {/* Subtle top gradient - Signal Pilot style */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Main aurora curtains */}
         <motion.div
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 80% 50% at 20% 0%, rgba(139,92,246,0.3) 0%, transparent 50%),
-              radial-gradient(ellipse 60% 40% at 40% 0%, rgba(168,85,247,0.25) 0%, transparent 45%),
-              radial-gradient(ellipse 70% 45% at 60% 0%, rgba(139,92,246,0.2) 0%, transparent 50%),
-              radial-gradient(ellipse 50% 35% at 80% 0%, rgba(99,102,241,0.25) 0%, transparent 40%)
+              radial-gradient(ellipse 80% 50% at 20% 0%, rgba(91,138,255,0.15) 0%, transparent 50%),
+              radial-gradient(ellipse 60% 40% at 60% 0%, rgba(118,221,255,0.1) 0%, transparent 45%)
             `,
           }}
           animate={{ opacity: [0.6, 1, 0.6] }}
@@ -1939,9 +1948,9 @@ const LandingPage = ({ onStart, stats }) => {
           <motion.div
             animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl blur-xl"
+            className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl blur-xl"
           />
-          <div className="relative w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-500/30">
+          <div className="relative w-24 h-24 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/30">
             <motion.span
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -1960,7 +1969,7 @@ const LandingPage = ({ onStart, stats }) => {
           className="text-5xl md:text-7xl font-display font-bold text-center mb-4 tracking-tight"
         >
           <span className="text-white">Swipe. Match. </span>
-          <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
             Invest.
           </span>
         </motion.h1>
@@ -2010,7 +2019,7 @@ const LandingPage = ({ onStart, stats }) => {
             className="flex gap-6 mb-8 text-center"
           >
             <div>
-              <p className="text-3xl font-black text-purple-400">{stats.totalSwipes || 0}</p>
+              <p className="text-3xl font-black text-blue-400">{stats.totalSwipes || 0}</p>
               <p className="text-slate-500 text-sm">Total Swipes</p>
             </div>
             <div>
@@ -2034,8 +2043,8 @@ const LandingPage = ({ onStart, stats }) => {
           onClick={onStart}
           className="relative group px-12 py-5 rounded-2xl font-display font-bold text-xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #f97316 100%)',
-            boxShadow: '0 20px 40px -10px rgba(139,92,246,0.5), 0 0 0 1px rgba(255,255,255,0.1) inset',
+            background: 'linear-gradient(135deg, #5b8aff 0%, #76ddff 100%)',
+            boxShadow: '0 20px 40px -10px rgba(91,138,255,0.5), 0 0 0 1px rgba(255,255,255,0.1) inset',
           }}
         >
           {/* Shimmer overlay */}
@@ -2049,7 +2058,7 @@ const LandingPage = ({ onStart, stats }) => {
           />
           {/* Glow effect on hover */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
-            style={{ boxShadow: '0 0 40px rgba(236,72,153,0.6)' }}
+            style={{ boxShadow: '0 0 40px rgba(118,221,255,0.6)' }}
           />
           <span className="relative z-10 flex items-center gap-2">
             Start Swiping
@@ -2138,8 +2147,8 @@ const PortfolioView = ({ portfolio, currentPrices, onBack, onRemove, onShare }) 
 
         {/* How PnL Works - Info Banner */}
         {positions.length > 0 && (
-          <div className="mx-4 mb-2 px-3 py-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-            <p className="text-purple-300 text-xs text-center">
+          <div className="mx-4 mb-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <p className="text-blue-300 text-xs text-center">
               📊 <span className="font-medium">Paper Trading:</span> Swipe right = Entry price saved • PnL updates every 30 sec
             </p>
           </div>
@@ -2155,7 +2164,7 @@ const PortfolioView = ({ portfolio, currentPrices, onBack, onRemove, onShare }) 
             <p className="text-slate-500 mb-6">Start swiping right to build your portfolio!</p>
             <button
               onClick={onBack}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 rounded-xl font-bold hover:opacity-90 transition"
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 rounded-xl font-bold hover:opacity-90 transition"
             >
               Start Swiping
             </button>
@@ -2306,7 +2315,7 @@ const PremiumModal = ({ onClose, swipesUsed, assetType }) => {
       onClick={onClose}
     >
       <motion.div
-        className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl p-6 max-w-sm w-full border border-purple-500/30 shadow-2xl"
+        className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl p-6 max-w-sm w-full border border-blue-500/30 shadow-2xl"
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, y: 50 }}
@@ -2317,7 +2326,7 @@ const PremiumModal = ({ onClose, swipesUsed, assetType }) => {
           <span className="text-6xl">👑</span>
         </div>
 
-        <h2 className="text-2xl font-black text-center bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+        <h2 className="text-2xl font-black text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">
           You're on Fire!
         </h2>
 
@@ -2327,7 +2336,7 @@ const PremiumModal = ({ onClose, swipesUsed, assetType }) => {
 
         {/* Premium features */}
         <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-white/5">
-          <p className="text-sm font-bold text-purple-400 mb-3">Premium Features:</p>
+          <p className="text-sm font-bold text-blue-400 mb-3">Premium Features:</p>
           <ul className="space-y-2 text-sm text-slate-300">
             <li className="flex items-center gap-2">
               <span className="text-green-400">✓</span> Unlimited daily swipes
@@ -2361,7 +2370,7 @@ const PremiumModal = ({ onClose, swipesUsed, assetType }) => {
             localStorage.setItem('swipefolio_premium', 'true');
             onClose();
           }}
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-3 rounded-xl font-bold text-lg mb-3 hover:opacity-90 transition"
+          className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 py-3 rounded-xl font-bold text-lg mb-3 hover:opacity-90 transition"
         >
           Upgrade to Premium
         </button>
@@ -2422,7 +2431,7 @@ const AdBanner = ({ slot = 'bottom' }) => {
           href={AFFILIATE_LINKS.coinbase}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-purple-400 hover:text-purple-300"
+          className="text-blue-400 hover:text-blue-300"
         >
           Start trading on Coinbase →
         </a>
@@ -2458,14 +2467,14 @@ const BottomNav = ({ activeTab, onTabChange, portfolioCount, isPremium }) => {
           onClick={() => onTabChange(tab.id)}
           className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all relative ${
             activeTab === tab.id
-              ? 'text-purple-400'
+              ? 'text-blue-400'
               : 'text-slate-500 hover:text-slate-300'
           }`}
         >
           {activeTab === tab.id && (
             <motion.div
               layoutId="activeTab"
-              className="absolute inset-0 bg-purple-500/10 rounded-xl"
+              className="absolute inset-0 bg-blue-500/10 rounded-xl"
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             />
           )}
@@ -2554,7 +2563,7 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
       {/* Profile Section */}
       <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-white/5">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-3xl overflow-hidden">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-3xl overflow-hidden">
             {user?.photoURL ? (
               <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -2582,7 +2591,7 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowSignUp(true)}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-3 rounded-xl font-bold"
+            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 py-3 rounded-xl font-bold"
           >
             Create Account
           </motion.button>
@@ -2618,7 +2627,7 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
         {!isPremium && (
           <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+              className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all"
               style={{ width: `${(swipesToday / FREE_DAILY_SWIPES) * 100}%` }}
             />
           </div>
@@ -2630,7 +2639,7 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
         <h3 className="font-bold mb-3">Your Stats</h3>
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center">
-            <p className="text-2xl font-black text-purple-400">{stats.aped + stats.rugged}</p>
+            <p className="text-2xl font-black text-blue-400">{stats.aped + stats.rugged}</p>
             <p className="text-slate-500 text-xs">Total Swipes</p>
           </div>
           <div className="text-center">
@@ -2696,19 +2705,19 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 rounded-xl border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    className="w-full px-4 py-3 bg-slate-800 rounded-xl border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                   />
                   <input
                     type="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 rounded-xl border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    className="w-full px-4 py-3 bg-slate-800 rounded-xl border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                   />
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 py-3 rounded-xl font-medium disabled:opacity-50"
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 py-3 rounded-xl font-medium disabled:opacity-50"
                   >
                     {loading ? 'Signing in...' : 'Continue'}
                   </button>
@@ -2955,7 +2964,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
     return (
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <h2 className="text-xl font-bold">Community</h2>
-        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl p-6 border border-purple-500/30 text-center">
+        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl p-6 border border-blue-500/30 text-center">
           <div className="text-4xl mb-3">🔐</div>
           <h3 className="font-bold text-lg mb-2">Sign In to Join</h3>
           <p className="text-slate-400 text-sm mb-4">
@@ -3009,7 +3018,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
               </div>
               <div className={`max-w-[70%] ${msg.userId === user.uid ? 'text-right' : ''}`}>
                 <p className="text-xs text-slate-400 mb-1">{msg.userDisplayName}</p>
-                <div className={`p-2 rounded-lg ${msg.userId === user.uid ? 'bg-purple-600' : 'bg-slate-700'}`}>
+                <div className={`p-2 rounded-lg ${msg.userId === user.uid ? 'bg-blue-600' : 'bg-slate-700'}`}>
                   <p className="text-sm">{msg.message}</p>
                 </div>
               </div>
@@ -3035,12 +3044,12 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
               placeholder={cooldownTime > 0 ? `Wait ${cooldownTime}s...` : "Type a message..."}
               disabled={cooldownTime > 0}
               maxLength={MAX_MESSAGE_LENGTH}
-              className="flex-1 bg-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+              className="flex-1 bg-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             />
             <button
               onClick={handleSendMessage}
               disabled={cooldownTime > 0}
-              className="px-4 py-2 bg-purple-600 rounded-lg font-medium text-sm hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-blue-600 rounded-lg font-medium text-sm hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cooldownTime > 0 ? cooldownTime : 'Send'}
             </button>
@@ -3081,7 +3090,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {dmMessages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.from === user.uid ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[70%] p-3 rounded-lg ${msg.from === user.uid ? 'bg-purple-600' : 'bg-slate-700'}`}>
+              <div className={`max-w-[70%] p-3 rounded-lg ${msg.from === user.uid ? 'bg-blue-600' : 'bg-slate-700'}`}>
                 <p className="text-sm">{msg.message}</p>
               </div>
             </div>
@@ -3106,12 +3115,12 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
               placeholder={cooldownTime > 0 ? `Wait ${cooldownTime}s...` : "Type a message..."}
               disabled={cooldownTime > 0}
               maxLength={MAX_MESSAGE_LENGTH}
-              className="flex-1 bg-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+              className="flex-1 bg-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             />
             <button
               onClick={handleSendMessage}
               disabled={cooldownTime > 0}
-              className="px-4 py-2 bg-purple-600 rounded-lg font-medium text-sm hover:bg-purple-500 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 rounded-lg font-medium text-sm hover:bg-blue-500 transition-colors disabled:opacity-50"
             >
               {cooldownTime > 0 ? cooldownTime : 'Send'}
             </button>
@@ -3128,7 +3137,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
       {/* Section Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {[
-          { id: 'matches', label: 'Matches', emoji: '💜' },
+          { id: 'matches', label: 'Matches', emoji: '💙' },
           { id: 'chatrooms', label: 'Chat Rooms', emoji: '💬' },
           { id: 'connections', label: 'Connections', emoji: '🤝' },
           { id: 'trending', label: 'Trending', emoji: '🔥' },
@@ -3138,7 +3147,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
             onClick={() => setActiveSection(section.id)}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
               activeSection === section.id
-                ? 'bg-purple-600 text-white'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
@@ -3173,11 +3182,11 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium truncate">{match.displayName}</h4>
-                  <p className="text-xs text-purple-400">{match.commonCoins} coins in common</p>
+                  <p className="text-xs text-blue-400">{match.commonCoins} coins in common</p>
                 </div>
                 <button
                   onClick={() => handleConnect(match.id)}
-                  className="px-3 py-1.5 bg-purple-600 rounded-lg text-sm font-medium hover:bg-purple-500 transition-colors"
+                  className="px-3 py-1.5 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
                 >
                   Connect
                 </button>
@@ -3195,7 +3204,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
             <button
               key={pos.id}
               onClick={() => setSelectedChatRoom({ id: pos.id, symbol: pos.symbol, image: pos.image })}
-              className="w-full bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3 hover:border-purple-500/30 transition-colors text-left"
+              className="w-full bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3 hover:border-blue-500/30 transition-colors text-left"
             >
               <img src={pos.image} className="w-10 h-10 rounded-full" alt={pos.symbol} />
               <div className="flex-1">
@@ -3224,7 +3233,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-slate-400">Pending Requests</h3>
               {matchRequests.map((req) => (
-                <div key={req.id} className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30 flex items-center gap-3">
+                <div key={req.id} className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-500/30 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden">
                     {req.fromUser?.photoURL ? (
                       <img src={req.fromUser.photoURL} className="w-full h-full object-cover" alt="" />
@@ -3236,7 +3245,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium">{req.fromUser?.displayName}</h4>
-                    <p className="text-xs text-purple-400">Wants to connect</p>
+                    <p className="text-xs text-blue-400">Wants to connect</p>
                   </div>
                   <button
                     onClick={() => handleAcceptRequest(req.from)}
@@ -3263,7 +3272,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
                 <button
                   key={conn.id}
                   onClick={() => setDmPartner(conn)}
-                  className="w-full bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3 hover:border-purple-500/30 transition-colors text-left"
+                  className="w-full bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3 hover:border-blue-500/30 transition-colors text-left"
                 >
                   <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden">
                     {conn.photoURL ? (
@@ -3278,7 +3287,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
                     <h4 className="font-medium">{conn.displayName}</h4>
                     <p className="text-xs text-green-400">Connected</p>
                   </div>
-                  <span className="text-sm text-purple-400">Message</span>
+                  <span className="text-sm text-blue-400">Message</span>
                 </button>
               ))
             )}
@@ -4008,111 +4017,47 @@ export default function Swipefolio() {
   // Main App with Bottom Navigation
   return (
     <div className="h-[100dvh] text-white flex flex-col relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(180deg, #0a0f1a 0%, #1a1040 40%, #0f172a 100%)',
-      }}
+      style={{ background: '#05070d' }}
     >
-      {/* Subtle Grid Pattern - Only show on discover tab */}
-      {activeTab === 'discover' && (
-        <div
-          className="fixed inset-0 pointer-events-none opacity-[0.03]"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px',
-          }}
-        />
-      )}
-
-      {/* Aurora Background - More Dramatic */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Main aurora glow from top */}
-        <div
-          className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[600px]"
-          style={{
-            background: 'radial-gradient(ellipse 100% 60% at 50% 0%, rgba(139,92,246,0.4) 0%, rgba(168,85,247,0.2) 40%, transparent 70%)',
-            filter: 'blur(40px)',
-          }}
-        />
-
-        {/* Center card glow */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[600px]"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.15) 0%, transparent 60%)',
-            filter: 'blur(60px)',
-          }}
-          animate={{ opacity: [0.5, 0.8, 0.5], scale: [0.95, 1.05, 0.95] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        />
-
-        {/* Side glows */}
-        <div
-          className="absolute top-1/4 -left-20 w-[400px] h-[500px] opacity-40"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.4) 0%, transparent 70%)',
-            filter: 'blur(80px)',
-          }}
-        />
-        <div
-          className="absolute top-1/3 -right-20 w-[400px] h-[500px] opacity-40"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.35) 0%, transparent 70%)',
-            filter: 'blur(80px)',
-          }}
-        />
-
-        {/* Vertical aurora beams - More visible */}
-        {[15, 35, 50, 65, 85].map((left, i) => (
-          <motion.div
+      {/* Starfield Background - Signal Pilot style */}
+      <div className="starfield">
+        {/* Static stars */}
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div
             key={i}
-            className="absolute top-0"
+            className="star"
             style={{
-              left: `${left}%`,
-              width: i === 2 ? '150px' : '80px',
-              height: '80%',
-              background: `linear-gradient(180deg,
-                rgba(139,92,246,${i === 2 ? 0.3 : 0.2}) 0%,
-                rgba(168,85,247,${i === 2 ? 0.15 : 0.1}) 40%,
-                transparent 100%)`,
-              filter: 'blur(20px)',
-              transform: 'translateX(-50%)',
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              width: `${Math.random() * 2 + 1}px`,
+              height: `${Math.random() * 2 + 1}px`,
+              animationDelay: `${Math.random() * 3}s`,
+              opacity: Math.random() * 0.5 + 0.2,
             }}
-            animate={{
-              opacity: [0.4, 0.8, 0.4],
-              height: ['75%', '85%', '75%'],
-            }}
-            transition={{
-              duration: 3 + i * 0.5,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: i * 0.2,
-            }}
-          />
-        ))}
-
-        {/* Accent beam lines */}
-        {[25, 50, 75].map((left, i) => (
-          <motion.div
-            key={`line-${i}`}
-            className="absolute top-0"
-            style={{
-              left: `${left}%`,
-              width: '2px',
-              height: '60%',
-              background: 'linear-gradient(180deg, rgba(168,85,247,0.6) 0%, rgba(139,92,246,0.2) 50%, transparent 100%)',
-              transform: 'translateX(-50%)',
-            }}
-            animate={{ opacity: [0.2, 0.5, 0.2] }}
-            transition={{ duration: 2 + i, repeat: Infinity, ease: 'easeInOut' }}
           />
         ))}
       </div>
 
-      {/* Floating Sparkles - More of them */}
-      <FloatingSparkles count={35} />
+      {/* Subtle blue accent glows */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute -top-40 left-1/4 w-[600px] h-[400px]"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(91,138,255,0.08) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+          }}
+        />
+        <div
+          className="absolute top-1/2 right-0 w-[400px] h-[400px]"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(118,221,255,0.05) 0%, transparent 70%)',
+            filter: 'blur(80px)',
+          }}
+        />
+      </div>
+
+      {/* Floating Sparkles - Reduced */}
+      <FloatingSparkles count={15} />
 
       {/* Confetti Explosion on APE! */}
       <Confetti trigger={confettiTrigger} type="ape" />
@@ -4172,12 +4117,12 @@ export default function Swipefolio() {
           <motion.div
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg"
-            style={{ boxShadow: '0 8px 20px rgba(168,85,247,0.4)' }}
+            className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg"
+            style={{ boxShadow: '0 8px 20px rgba(91,138,255,0.4)' }}
           >
             <span className="text-xl">{assetType === 'crypto' ? '🪙' : '📈'}</span>
           </motion.div>
-          <span className="text-xl font-display font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:inline">
+          <span className="text-xl font-display font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent hidden sm:inline">
             Swipefolio
           </span>
           {/* Asset Type Toggle */}
@@ -4261,8 +4206,8 @@ export default function Swipefolio() {
             onClick={() => { setSelectedCategory(cat.id); setCurrentIndex(0); setHistory([]); }}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full whitespace-nowrap text-xs font-medium transition-all"
             style={selectedCategory === cat.id ? {
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
-              boxShadow: '0 4px 15px rgba(139,92,246,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset',
+              background: 'linear-gradient(135deg, #5b8aff 0%, #76ddff 100%)',
+              boxShadow: '0 4px 15px rgba(91,138,255,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset',
             } : {
               background: 'rgba(30,41,59,0.8)',
               border: '1px solid rgba(255,255,255,0.08)',
@@ -4354,7 +4299,7 @@ export default function Swipefolio() {
             <div className="w-12 h-1 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all duration-300 ${
-                  swipesToday >= FREE_DAILY_SWIPES - 5 ? 'bg-orange-500' : 'bg-purple-500'
+                  swipesToday >= FREE_DAILY_SWIPES - 5 ? 'bg-orange-500' : 'bg-blue-500'
                 }`}
                 style={{ width: `${Math.min(100, (swipesToday / FREE_DAILY_SWIPES) * 100)}%` }}
               />
@@ -4402,7 +4347,7 @@ export default function Swipefolio() {
             whileTap={{ scale: 0.85 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             onClick={() => handleSwipe('right', true)}
-            className="relative w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center border-2 border-blue-400 shadow-lg text-2xl"
+            className="relative w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center border-2 border-blue-400 shadow-lg text-2xl"
           >
             ⭐
           </motion.button>
@@ -4422,7 +4367,7 @@ export default function Swipefolio() {
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={handleReset}
-            className="w-11 h-11 bg-slate-800 rounded-full flex items-center justify-center hover:bg-purple-500/20 border-2 border-slate-700 hover:border-purple-500 transition text-xl"
+            className="w-11 h-11 bg-slate-800 rounded-full flex items-center justify-center hover:bg-blue-500/20 border-2 border-slate-700 hover:border-blue-500 transition text-xl"
           >
             🔀
           </motion.button>
