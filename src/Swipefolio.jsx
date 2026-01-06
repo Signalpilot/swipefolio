@@ -448,7 +448,6 @@ const TRADINGVIEW_SYMBOLS = {
   'solv-protocol': 'BINANCE:SOLVUSDT',
   'vine': 'BYBIT:VINEUSDT',
   'paal-ai': 'BYBIT:PAALUSDT',
-  'nosana': 'BYBIT:NOSUSDT',
   'michi': 'BYBIT:MICHIUSDT',
   'chillguy': 'BYBIT:CHILLGUYUSDT',
   'agent-ai': 'BYBIT:AIAGENUSDT',
@@ -1216,6 +1215,25 @@ const playSound = (type) => {
   } catch (e) {
     // Audio not supported
   }
+};
+
+// ============================================================================
+// LOADING SPINNER COMPONENT
+// ============================================================================
+
+const LoadingSpinner = ({ text = 'Loading...', size = 'md' }) => {
+  const sizeClasses = {
+    sm: 'w-5 h-5',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12'
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center py-8 gap-3">
+      <div className={`${sizeClasses[size]} border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin`} />
+      <p className="text-slate-400 text-sm">{text}</p>
+    </div>
+  );
 };
 
 // ============================================================================
@@ -2117,7 +2135,7 @@ const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
               }
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 bg-slate-800 py-2 rounded-lg text-center text-sm font-medium hover:bg-slate-700 transition"
+              className="flex-1 bg-slate-800 py-2 rounded-xl text-center text-sm font-medium hover:bg-slate-700 transition-colors"
             >
               {coin.isStock ? 'Yahoo Finance ↗' : 'CoinGecko ↗'}
             </a>
@@ -2125,7 +2143,7 @@ const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
               href={`https://www.tradingview.com/chart/?symbol=${tvSymbol}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 bg-slate-800 py-2 rounded-lg text-center text-sm font-medium hover:bg-slate-700 transition"
+              className="flex-1 bg-slate-800 py-2 rounded-xl text-center text-sm font-medium hover:bg-slate-700 transition-colors"
             >
               TradingView ↗
             </a>
@@ -2320,13 +2338,13 @@ const DailyPrediction = ({ coins, onVote, userVote }) => {
         <div className="flex gap-2">
           <button
             onClick={() => onVote('ape')}
-            className="flex-1 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 py-2 rounded-lg text-sm font-bold transition"
+            className="flex-1 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 py-2 rounded-xl text-sm font-bold transition-colors"
           >
             🦍 APE
           </button>
           <button
             onClick={() => onVote('rug')}
-            className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 py-2 rounded-lg text-sm font-bold transition"
+            className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 py-2 rounded-xl text-sm font-bold transition-colors"
           >
             🚫 RUG
           </button>
@@ -2526,7 +2544,7 @@ const Leaderboard = ({ portfolio, user, leaderboardData, userRankData }) => {
 
       {/* User rank */}
       {user ? (
-        <div className="bg-blue-500/20 rounded-lg p-2 flex items-center gap-3 border border-blue-500/30">
+        <div className="bg-blue-500/20 rounded-xl p-2 flex items-center gap-3 border border-blue-500/30">
           <span className="text-sm font-bold text-blue-400">#{userRank || '?'}</span>
           {user.photoURL ? (
             <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" />
@@ -2540,7 +2558,7 @@ const Leaderboard = ({ portfolio, user, leaderboardData, userRankData }) => {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-700/30 rounded-lg p-2 text-center border border-white/5">
+        <div className="bg-slate-700/30 rounded-xl p-2 text-center border border-white/5">
           <span className="text-xs text-slate-400">Sign in to see your rank</span>
         </div>
       )}
@@ -2810,7 +2828,7 @@ const PortfolioView = ({ portfolio, currentPrices, onBack, onRemove, onShare }) 
 
         {/* How PnL Works - Info Banner */}
         {positions.length > 0 && (
-          <div className="mx-4 mb-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <div className="mx-4 mb-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
             <p className="text-blue-300 text-xs text-center">
               📊 <span className="font-medium">Paper Trading:</span> Swipe right = Entry price saved • PnL updates every 30 sec
             </p>
@@ -2884,7 +2902,7 @@ const PortfolioView = ({ portfolio, currentPrices, onBack, onRemove, onShare }) 
                     : `${AFFILIATE_LINKS.coinbase}?entry=portfolio_${pos.symbol}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex-1 py-2 rounded-lg font-medium text-center text-sm hover:opacity-90 transition ${
+                  className={`flex-1 py-2 rounded-xl font-medium text-center text-sm hover:opacity-90 transition-colors ${
                     pos.isStock
                       ? 'bg-gradient-to-r from-green-600 to-green-500'
                       : 'bg-gradient-to-r from-green-500 to-emerald-500'
@@ -3052,22 +3070,22 @@ const PremiumModal = ({ onClose, swipesUsed, assetType }) => {
             {assetType === 'crypto' ? (
               <>
                 <a href={AFFILIATE_LINKS.coinbase} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 bg-blue-600 py-2 rounded-lg text-center text-xs font-bold hover:bg-blue-500 transition">
+                  className="flex-1 bg-blue-600 py-2 rounded-xl text-center text-sm font-bold hover:bg-blue-500 transition-colors">
                   Coinbase
                 </a>
                 <a href={AFFILIATE_LINKS.binance} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 bg-yellow-500 text-black py-2 rounded-lg text-center text-xs font-bold hover:bg-yellow-400 transition">
+                  className="flex-1 bg-yellow-500 text-black py-2 rounded-xl text-center text-sm font-bold hover:bg-yellow-400 transition-colors">
                   Binance
                 </a>
               </>
             ) : (
               <>
                 <a href={AFFILIATE_LINKS.robinhood} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 bg-green-500 py-2 rounded-lg text-center text-xs font-bold hover:bg-green-400 transition">
+                  className="flex-1 bg-green-500 py-2 rounded-xl text-center text-sm font-bold hover:bg-green-400 transition-colors">
                   Robinhood
                 </a>
                 <a href={AFFILIATE_LINKS.webull} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 bg-orange-500 py-2 rounded-lg text-center text-xs font-bold hover:bg-orange-400 transition">
+                  className="flex-1 bg-orange-500 py-2 rounded-xl text-center text-sm font-bold hover:bg-orange-400 transition-colors">
                   Webull
                 </a>
               </>
@@ -3087,7 +3105,7 @@ const AdBanner = ({ slot = 'bottom' }) => {
   // This is a placeholder - replace with actual AdMob component
   // For React: use @react-native-admob/admob or react-native-google-mobile-ads
   return (
-    <div className="bg-slate-800/50 border border-white/5 rounded-lg p-2 text-center">
+    <div className="bg-slate-800/50 border border-white/5 rounded-xl p-2 text-center">
       <p className="text-slate-600 text-xs">
         {/* AdMob Banner - slot: {slot} */}
         <a
@@ -4096,7 +4114,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
         <div className="space-y-3">
           <p className="text-slate-400 text-sm">People who APE the same coins as you</p>
           {loading ? (
-            <div className="text-center py-8 text-slate-400">Loading matches...</div>
+            <LoadingSpinner text="Loading matches..." />
           ) : investorMatches.length === 0 ? (
             <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
               <div className="text-4xl mb-3">🦍</div>
@@ -4169,7 +4187,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
               <span>📡</span> Activity Feed
             </h3>
             {loading ? (
-              <div className="text-center py-8 text-slate-400">Loading activity...</div>
+              <LoadingSpinner text="Loading activity..." />
             ) : activityFeed.length === 0 ? (
               <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
                 <div className="text-4xl mb-3">📡</div>
@@ -4324,7 +4342,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
 
           {/* Challenge Cards */}
           {loading ? (
-            <div className="text-center py-8 text-slate-400">Loading challenges...</div>
+            <LoadingSpinner text="Loading challenges..." />
           ) : selectedChallenge ? (
             // Challenge Detail View with Leaderboard
             <div className="space-y-4">
@@ -5877,24 +5895,112 @@ export default function Swipefolio() {
 // MOCK DATA FALLBACK
 // ============================================================================
 
+// Mock crypto data - Top 100+ coins with realistic prices
+const MOCK_CRYPTO_LIST = [
+  { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', price: 98000, mcap: 1940000000000 },
+  { id: 'ethereum', symbol: 'eth', name: 'Ethereum', price: 3450, mcap: 415000000000 },
+  { id: 'tether', symbol: 'usdt', name: 'Tether', price: 1.0, mcap: 120000000000 },
+  { id: 'ripple', symbol: 'xrp', name: 'XRP', price: 2.35, mcap: 135000000000 },
+  { id: 'solana', symbol: 'sol', name: 'Solana', price: 198, mcap: 95000000000 },
+  { id: 'binancecoin', symbol: 'bnb', name: 'BNB', price: 710, mcap: 105000000000 },
+  { id: 'usd-coin', symbol: 'usdc', name: 'USD Coin', price: 1.0, mcap: 42000000000 },
+  { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', price: 0.32, mcap: 47000000000 },
+  { id: 'cardano', symbol: 'ada', name: 'Cardano', price: 0.98, mcap: 34000000000 },
+  { id: 'tron', symbol: 'trx', name: 'TRON', price: 0.26, mcap: 22000000000 },
+  { id: 'avalanche-2', symbol: 'avax', name: 'Avalanche', price: 38, mcap: 15600000000 },
+  { id: 'chainlink', symbol: 'link', name: 'Chainlink', price: 23, mcap: 14500000000 },
+  { id: 'toncoin', symbol: 'ton', name: 'Toncoin', price: 5.2, mcap: 13200000000 },
+  { id: 'shiba-inu', symbol: 'shib', name: 'Shiba Inu', price: 0.0000225, mcap: 13200000000 },
+  { id: 'sui', symbol: 'sui', name: 'Sui', price: 4.23, mcap: 13400000000 },
+  { id: 'polkadot', symbol: 'dot', name: 'Polkadot', price: 6.8, mcap: 10500000000 },
+  { id: 'bitcoin-cash', symbol: 'bch', name: 'Bitcoin Cash', price: 445, mcap: 8800000000 },
+  { id: 'pepe', symbol: 'pepe', name: 'Pepe', price: 0.0000234, mcap: 9800000000 },
+  { id: 'litecoin', symbol: 'ltc', name: 'Litecoin', price: 105, mcap: 7900000000 },
+  { id: 'uniswap', symbol: 'uni', name: 'Uniswap', price: 14.2, mcap: 8500000000 },
+  { id: 'near', symbol: 'near', name: 'NEAR Protocol', price: 5.1, mcap: 6200000000 },
+  { id: 'stellar', symbol: 'xlm', name: 'Stellar', price: 0.42, mcap: 12600000000 },
+  { id: 'aptos', symbol: 'apt', name: 'Aptos', price: 9.2, mcap: 4600000000 },
+  { id: 'internet-computer', symbol: 'icp', name: 'Internet Computer', price: 10.5, mcap: 4900000000 },
+  { id: 'hedera-hashgraph', symbol: 'hbar', name: 'Hedera', price: 0.28, mcap: 10600000000 },
+  { id: 'ethereum-classic', symbol: 'etc', name: 'Ethereum Classic', price: 26, mcap: 3800000000 },
+  { id: 'render-token', symbol: 'rndr', name: 'Render', price: 8.9, mcap: 4600000000 },
+  { id: 'filecoin', symbol: 'fil', name: 'Filecoin', price: 5.2, mcap: 3000000000 },
+  { id: 'cosmos', symbol: 'atom', name: 'Cosmos', price: 6.8, mcap: 2700000000 },
+  { id: 'crypto-com-chain', symbol: 'cro', name: 'Cronos', price: 0.14, mcap: 3700000000 },
+  { id: 'aave', symbol: 'aave', name: 'Aave', price: 268, mcap: 4000000000 },
+  { id: 'arbitrum', symbol: 'arb', name: 'Arbitrum', price: 0.78, mcap: 3100000000 },
+  { id: 'fetch-ai', symbol: 'fet', name: 'Fetch.ai', price: 2.15, mcap: 5400000000 },
+  { id: 'bonk', symbol: 'bonk', name: 'Bonk', price: 0.0000312, mcap: 2100000000 },
+  { id: 'floki', symbol: 'floki', name: 'FLOKI', price: 0.000189, mcap: 1800000000 },
+  { id: 'injective-protocol', symbol: 'inj', name: 'Injective', price: 24, mcap: 2400000000 },
+  { id: 'optimism', symbol: 'op', name: 'Optimism', price: 1.8, mcap: 2200000000 },
+  { id: 'the-graph', symbol: 'grt', name: 'The Graph', price: 0.22, mcap: 2100000000 },
+  { id: 'immutable-x', symbol: 'imx', name: 'Immutable', price: 1.5, mcap: 2500000000 },
+  { id: 'theta-token', symbol: 'theta', name: 'Theta Network', price: 2.1, mcap: 2100000000 },
+  { id: 'fantom', symbol: 'ftm', name: 'Fantom', price: 0.95, mcap: 2700000000 },
+  { id: 'sei-network', symbol: 'sei', name: 'Sei', price: 0.45, mcap: 1700000000 },
+  { id: 'celestia', symbol: 'tia', name: 'Celestia', price: 5.2, mcap: 1400000000 },
+  { id: 'algorand', symbol: 'algo', name: 'Algorand', price: 0.38, mcap: 3100000000 },
+  { id: 'matic-network', symbol: 'matic', name: 'Polygon', price: 0.48, mcap: 4400000000 },
+  { id: 'maker', symbol: 'mkr', name: 'Maker', price: 1650, mcap: 1500000000 },
+  { id: 'worldcoin-wld', symbol: 'wld', name: 'Worldcoin', price: 2.3, mcap: 1100000000 },
+  { id: 'arweave', symbol: 'ar', name: 'Arweave', price: 15, mcap: 980000000 },
+  { id: 'stacks', symbol: 'stx', name: 'Stacks', price: 1.6, mcap: 2400000000 },
+  { id: 'flow', symbol: 'flow', name: 'Flow', price: 0.72, mcap: 1100000000 },
+  { id: 'lido-dao', symbol: 'ldo', name: 'Lido DAO', price: 1.9, mcap: 1700000000 },
+  { id: 'gala', symbol: 'gala', name: 'Gala', price: 0.042, mcap: 1600000000 },
+  { id: 'axie-infinity', symbol: 'axs', name: 'Axie Infinity', price: 7.2, mcap: 1100000000 },
+  { id: 'the-sandbox', symbol: 'sand', name: 'The Sandbox', price: 0.58, mcap: 1300000000 },
+  { id: 'decentraland', symbol: 'mana', name: 'Decentraland', price: 0.52, mcap: 1000000000 },
+  { id: 'enjincoin', symbol: 'enj', name: 'Enjin Coin', price: 0.28, mcap: 470000000 },
+  { id: 'chiliz', symbol: 'chz', name: 'Chiliz', price: 0.095, mcap: 890000000 },
+  { id: 'ape', symbol: 'ape', name: 'ApeCoin', price: 1.2, mcap: 900000000 },
+  { id: 'blur', symbol: 'blur', name: 'Blur', price: 0.28, mcap: 420000000 },
+  { id: 'gmx', symbol: 'gmx', name: 'GMX', price: 28, mcap: 280000000 },
+  { id: 'pendle', symbol: 'pendle', name: 'Pendle', price: 5.8, mcap: 950000000 },
+  { id: 'jupiter', symbol: 'jup', name: 'Jupiter', price: 0.85, mcap: 1150000000 },
+  { id: 'jito-governance-token', symbol: 'jto', name: 'Jito', price: 3.2, mcap: 380000000 },
+  { id: 'wormhole', symbol: 'w', name: 'Wormhole', price: 0.28, mcap: 510000000 },
+  { id: 'ondo-finance', symbol: 'ondo', name: 'Ondo', price: 1.35, mcap: 1900000000 },
+  { id: 'ethena', symbol: 'ena', name: 'Ethena', price: 0.92, mcap: 2700000000 },
+  { id: 'pyth-network', symbol: 'pyth', name: 'Pyth Network', price: 0.38, mcap: 1400000000 },
+  { id: 'brett', symbol: 'brett', name: 'Brett', price: 0.16, mcap: 1600000000 },
+  { id: 'popcat', symbol: 'popcat', name: 'Popcat', price: 0.75, mcap: 730000000 },
+  { id: 'mog-coin', symbol: 'mog', name: 'Mog Coin', price: 0.0000024, mcap: 950000000 },
+  { id: 'cat-in-a-dogs-world', symbol: 'mew', name: 'cat in a dogs world', price: 0.0095, mcap: 850000000 },
+  { id: 'dogwifcoin', symbol: 'wif', name: 'dogwifhat', price: 1.9, mcap: 1900000000 },
+  { id: 'kaspa', symbol: 'kas', name: 'Kaspa', price: 0.12, mcap: 3000000000 },
+  { id: 'mantle', symbol: 'mnt', name: 'Mantle', price: 1.05, mcap: 3400000000 },
+  { id: 'beam-2', symbol: 'beam', name: 'Beam', price: 0.028, mcap: 1400000000 },
+  { id: 'eos', symbol: 'eos', name: 'EOS', price: 0.82, mcap: 1200000000 },
+  { id: 'neo', symbol: 'neo', name: 'Neo', price: 14, mcap: 990000000 },
+  { id: 'iota', symbol: 'iota', name: 'IOTA', price: 0.32, mcap: 1100000000 },
+  { id: 'zcash', symbol: 'zec', name: 'Zcash', price: 48, mcap: 780000000 },
+  { id: 'dash', symbol: 'dash', name: 'Dash', price: 32, mcap: 380000000 },
+  { id: 'monero', symbol: 'xmr', name: 'Monero', price: 195, mcap: 3600000000 }
+];
+
 function getMockCoins() {
-  return [
-    { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png', current_price: 98234, market_cap: 1940000000000, market_cap_rank: 1, total_volume: 42000000000, price_change_percentage_24h: 2.34, sparkline_in_7d: { price: Array.from({length: 168}, () => 95000 + Math.random() * 5000) } },
-    { id: 'ethereum', symbol: 'eth', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png', current_price: 3456, market_cap: 415000000000, market_cap_rank: 2, total_volume: 18000000000, price_change_percentage_24h: -1.23, sparkline_in_7d: { price: Array.from({length: 168}, () => 3300 + Math.random() * 300) } },
-    { id: 'solana', symbol: 'sol', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png', current_price: 198, market_cap: 95000000000, market_cap_rank: 5, total_volume: 4200000000, price_change_percentage_24h: 5.67, sparkline_in_7d: { price: Array.from({length: 168}, () => 180 + Math.random() * 30) } },
-    { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', image: 'https://assets.coingecko.com/coins/images/5/large/dogecoin.png', current_price: 0.32, market_cap: 47000000000, market_cap_rank: 8, total_volume: 2100000000, price_change_percentage_24h: 12.45, sparkline_in_7d: { price: Array.from({length: 168}, () => 0.28 + Math.random() * 0.08) } },
-    { id: 'pepe', symbol: 'pepe', name: 'Pepe', image: 'https://assets.coingecko.com/coins/images/29850/large/pepe-token.jpeg', current_price: 0.0000234, market_cap: 9800000000, market_cap_rank: 18, total_volume: 2300000000, price_change_percentage_24h: 18.76, sparkline_in_7d: { price: Array.from({length: 168}, () => 0.000018 + Math.random() * 0.000008) } },
-    { id: 'shiba-inu', symbol: 'shib', name: 'Shiba Inu', image: 'https://assets.coingecko.com/coins/images/11939/large/shiba.png', current_price: 0.0000225, market_cap: 13200000000, market_cap_rank: 15, total_volume: 650000000, price_change_percentage_24h: 6.78, sparkline_in_7d: { price: Array.from({length: 168}, () => 0.00002 + Math.random() * 0.000005) } },
-    { id: 'bonk', symbol: 'bonk', name: 'Bonk', image: 'https://assets.coingecko.com/coins/images/28600/large/bonk.jpg', current_price: 0.0000312, market_cap: 2100000000, market_cap_rank: 52, total_volume: 450000000, price_change_percentage_24h: 24.56, sparkline_in_7d: { price: Array.from({length: 168}, () => 0.000024 + Math.random() * 0.00001) } },
-    { id: 'floki', symbol: 'floki', name: 'FLOKI', image: 'https://assets.coingecko.com/coins/images/16746/large/PNG_image.png', current_price: 0.000189, market_cap: 1800000000, market_cap_rank: 58, total_volume: 320000000, price_change_percentage_24h: 15.23, sparkline_in_7d: { price: Array.from({length: 168}, () => 0.00016 + Math.random() * 0.00004) } },
-    { id: 'uniswap', symbol: 'uni', name: 'Uniswap', image: 'https://assets.coingecko.com/coins/images/12504/large/uni.jpg', current_price: 14.20, market_cap: 8500000000, market_cap_rank: 22, total_volume: 340000000, price_change_percentage_24h: -0.45, sparkline_in_7d: { price: Array.from({length: 168}, () => 13.5 + Math.random() * 1.5) } },
-    { id: 'aave', symbol: 'aave', name: 'Aave', image: 'https://assets.coingecko.com/coins/images/12645/large/AAVE.png', current_price: 268, market_cap: 4000000000, market_cap_rank: 32, total_volume: 180000000, price_change_percentage_24h: 2.10, sparkline_in_7d: { price: Array.from({length: 168}, () => 255 + Math.random() * 25) } },
-    { id: 'render-token', symbol: 'rndr', name: 'Render', image: 'https://assets.coingecko.com/coins/images/11636/large/rndr.png', current_price: 8.90, market_cap: 4600000000, market_cap_rank: 28, total_volume: 280000000, price_change_percentage_24h: 7.23, sparkline_in_7d: { price: Array.from({length: 168}, () => 8 + Math.random() * 1.5) } },
-    { id: 'fetch-ai', symbol: 'fet', name: 'Fetch.ai', image: 'https://assets.coingecko.com/coins/images/5681/large/Fetch.jpg', current_price: 2.15, market_cap: 5400000000, market_cap_rank: 25, total_volume: 320000000, price_change_percentage_24h: 9.45, sparkline_in_7d: { price: Array.from({length: 168}, () => 1.9 + Math.random() * 0.4) } },
-    { id: 'arbitrum', symbol: 'arb', name: 'Arbitrum', image: 'https://assets.coingecko.com/coins/images/16547/large/photo_2023-03-29_21.47.00.jpeg', current_price: 0.78, market_cap: 3100000000, market_cap_rank: 38, total_volume: 290000000, price_change_percentage_24h: 3.45, sparkline_in_7d: { price: Array.from({length: 168}, () => 0.72 + Math.random() * 0.1) } },
-    { id: 'sui', symbol: 'sui', name: 'Sui', image: 'https://assets.coingecko.com/coins/images/26375/large/sui_asset.jpeg', current_price: 4.23, market_cap: 13400000000, market_cap_rank: 14, total_volume: 1200000000, price_change_percentage_24h: 8.90, sparkline_in_7d: { price: Array.from({length: 168}, () => 3.8 + Math.random() * 0.6) } },
-    { id: 'cardano', symbol: 'ada', name: 'Cardano', image: 'https://assets.coingecko.com/coins/images/975/large/cardano.png', current_price: 0.98, market_cap: 34000000000, market_cap_rank: 9, total_volume: 890000000, price_change_percentage_24h: -3.21, sparkline_in_7d: { price: Array.from({length: 168}, () => 0.92 + Math.random() * 0.12) } },
-  ];
+  return MOCK_CRYPTO_LIST.map((coin, index) => {
+    const priceVariation = coin.price * 0.03 * (Math.random() - 0.5);
+    const currentPrice = coin.price + priceVariation;
+    const priceChange = (Math.random() - 0.5) * 10;
+
+    return {
+      id: coin.id,
+      symbol: coin.symbol,
+      name: coin.name,
+      image: `https://assets.coingecko.com/coins/images/${index + 1}/large/${coin.symbol}.png`,
+      current_price: currentPrice,
+      market_cap: coin.mcap,
+      market_cap_rank: index + 1,
+      total_volume: coin.mcap * 0.05 * (0.5 + Math.random()),
+      price_change_percentage_24h: priceChange,
+      high_24h: currentPrice * 1.02,
+      low_24h: currentPrice * 0.98,
+      sparkline_in_7d: { price: Array.from({length: 168}, () => currentPrice * (0.95 + Math.random() * 0.1)) }
+    };
+  });
 }
 
 function getMockStocks() {
