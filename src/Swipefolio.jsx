@@ -9,8 +9,9 @@ import { auth, signInWithGoogle, signInWithApple, signInWithEmail, logOut, onAut
 // ============================================================================
 
 // TradingView symbol mapping (CoinGecko ID -> TradingView full symbol with exchange)
-// Using USDT pairs on Binance as they have the best liquidity
+// Multi-exchange support - not everything is on Binance!
 const TRADINGVIEW_SYMBOLS = {
+  // Major coins - Binance
   'bitcoin': 'BINANCE:BTCUSDT',
   'ethereum': 'BINANCE:ETHUSDT',
   'solana': 'BINANCE:SOLUSDT',
@@ -25,7 +26,7 @@ const TRADINGVIEW_SYMBOLS = {
   'litecoin': 'BINANCE:LTCUSDT',
   'cosmos': 'BINANCE:ATOMUSDT',
   'stellar': 'BINANCE:XLMUSDT',
-  'monero': 'BINANCE:XMRUSDT',
+  'monero': 'KRAKEN:XMRUSD',
   'ethereum-classic': 'BINANCE:ETCUSDT',
   'filecoin': 'BINANCE:FILUSDT',
   'hedera': 'BINANCE:HBARUSDT',
@@ -70,6 +71,46 @@ const TRADINGVIEW_SYMBOLS = {
   'toncoin': 'OKX:TONUSDT',
   'tron': 'BINANCE:TRXUSDT',
   'bitcoin-cash': 'BINANCE:BCHUSDT',
+  // Bitfinex tokens
+  'leo-token': 'BITFINEX:LEOUSD',
+  'unus-sed-leo': 'BITFINEX:LEOUSD',
+  // Coinbase
+  'coinbase-wrapped-staked-eth': 'COINBASE:CBETHUSD',
+  // Kraken
+  'kaspa': 'KRAKEN:KASUSD',
+  // OKX
+  'okb': 'OKX:OKBUSDT',
+  // Crypto.com
+  'crypto-com-chain': 'CRYPTO:CROUSD',
+  // Others on various exchanges
+  'wrapped-bitcoin': 'BINANCE:WBTCUSDT',
+  'dai': 'BINANCE:DAIUSDT',
+  'steth': 'BINANCE:STETHETH',
+  'weth': 'BINANCE:WBTCUSDT',
+  'bnb': 'BINANCE:BNBUSDT',
+  'binancecoin': 'BINANCE:BNBUSDT',
+  'mantra-dao': 'BINANCE:OMUSDT',
+  'hyperliquid': 'BYBIT:HYPEUSDT',
+};
+
+// Fallback exchange order for coins not in mapping
+const EXCHANGE_FALLBACKS = ['BINANCE', 'COINBASE', 'KRAKEN', 'BITFINEX', 'OKX', 'BYBIT'];
+
+// Get best TradingView symbol for a coin
+const getTradingViewSymbol = (coin) => {
+  // Check direct mapping first
+  if (TRADINGVIEW_SYMBOLS[coin.id]) {
+    return TRADINGVIEW_SYMBOLS[coin.id];
+  }
+
+  // For stocks, use their exchange
+  if (coin.isStock) {
+    return `NASDAQ:${coin.symbol?.toUpperCase()}`;
+  }
+
+  // Default to Binance USDT pair
+  const symbol = coin.symbol?.toUpperCase();
+  return `BINANCE:${symbol}USDT`;
 };
 
 // Categories for filtering - CRYPTO
@@ -1104,17 +1145,31 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
                   onPointerUp={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
                     onTap(coin);
                   }}
-                  className="p-2 rounded-lg bg-purple-500/20 border border-purple-500/30 active:scale-95 transition-transform touch-manipulation"
-                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 active:scale-95 transition-transform touch-manipulation"
+                  style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'none' }}
                 >
-                  <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
                   </svg>
+                  <span className="text-[10px] font-medium text-purple-400">View Chart</span>
                 </motion.button>
               )}
             </div>
@@ -1266,10 +1321,8 @@ const MatchModal = ({ coin, pnl, onClose }) => {
 // ============================================================================
 
 const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
-  // Get full TradingView symbol - use NASDAQ for stocks, Binance for crypto
-  const tvSymbol = coin.isStock
-    ? `NASDAQ:${coin.symbol?.toUpperCase()}`
-    : (TRADINGVIEW_SYMBOLS[coin.id] || `BINANCE:${coin.symbol?.toUpperCase()}USDT`);
+  // Get full TradingView symbol - multi-exchange support
+  const tvSymbol = getTradingViewSymbol(coin);
   const risk = getRiskLevel(coin.market_cap);
   const vibes = getVibes(coin);
   const isPositive = coin.price_change_percentage_24h >= 0;
@@ -1312,7 +1365,7 @@ const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
         {/* TradingView Chart - Larger */}
         <div className="h-[400px] sm:h-[450px] bg-slate-950">
           <iframe
-            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tvSymbol}&interval=60&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f172a&studies=[]&theme=dark&style=1&timezone=exchange&withdateranges=1&showpopupbutton=0&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&showwatermark=0&locale=en&utm_source=swipeinvest&utm_medium=widget&utm_campaign=chart`}
+            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tvSymbol}&interval=60&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f172a&studies=[]&theme=dark&style=1&timezone=exchange&withdateranges=1&showpopupbutton=0&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&showwatermark=0&locale=en&utm_source=swipefolio&utm_medium=widget&utm_campaign=chart`}
             style={{ width: '100%', height: '100%' }}
             frameBorder="0"
             allowTransparency="true"
@@ -2670,7 +2723,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote }) =>
 // Helper to get today's date key
 const getTodayKey = () => new Date().toISOString().split('T')[0];
 
-export default function SwipeInvest() {
+export default function Swipefolio() {
   // Tab-based navigation: 'discover', 'portfolio', 'community', 'account'
   const [activeTab, setActiveTab] = useState('discover');
   // Legacy view state for landing page
@@ -3248,7 +3301,7 @@ export default function SwipeInvest() {
   const shareToTwitter = (pos) => {
     const pnl = ((currentPrices[pos.id] || pos.priceAtSwipe) - pos.priceAtSwipe) / pos.priceAtSwipe * 100;
     const emoji = pnl >= 0 ? '🟢' : '🔴';
-    const text = `${emoji} My $${pos.symbol?.toUpperCase()} paper trade on SwipeInvest:\n\nEntry: ${formatPrice(pos.priceAtSwipe)}\nNow: ${formatPrice(currentPrices[pos.id] || pos.priceAtSwipe)}\nPnL: ${formatPnL(pnl)}\n\nSwipe to invest! 📈\n\n#SwipeInvest #Crypto #Stocks #PaperTrading`;
+    const text = `${emoji} My $${pos.symbol?.toUpperCase()} paper trade on Swipefolio:\n\nEntry: ${formatPrice(pos.priceAtSwipe)}\nNow: ${formatPrice(currentPrices[pos.id] || pos.priceAtSwipe)}\nPnL: ${formatPnL(pnl)}\n\nSwipe. Match. Invest! 📈\n\n#Swipefolio #Crypto #Stocks #PaperTrading`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
