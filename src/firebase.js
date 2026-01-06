@@ -29,6 +29,7 @@ import {
   arrayRemove,
   increment
 } from 'firebase/firestore';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Swipefolio Firebase Config
 const firebaseConfig = {
@@ -690,5 +691,169 @@ export const getUserStreak = async (userId) => {
   } catch (error) {
     console.error('Get streak error:', error);
     return { data: null, error: error.message };
+  }
+};
+
+// ============================================================================
+// PUSH NOTIFICATIONS (Firebase Cloud Messaging)
+// ============================================================================
+
+// Initialize messaging (lazy load to avoid SSR issues)
+let messaging = null;
+const getMessagingInstance = () => {
+  if (typeof window !== 'undefined' && !messaging) {
+    try {
+      messaging = getMessaging(app);
+    } catch (error) {
+      console.error('Failed to initialize FCM:', error);
+    }
+  }
+  return messaging;
+};
+
+// VAPID key for web push (Firebase Console > Project Settings > Cloud Messaging > Web Push certificates)
+// This is a placeholder - you'll need to generate your own VAPID key
+const VAPID_KEY = 'YOUR_VAPID_KEY_HERE';
+
+// --- Request Notification Permission ---
+export const requestNotificationPermission = async () => {
+  try {
+    if (!('Notification' in window)) {
+      return { granted: false, error: 'Notifications not supported in this browser' };
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission === 'granted') {
+      return { granted: true, error: null };
+    } else if (permission === 'denied') {
+      return { granted: false, error: 'Notification permission denied' };
+    } else {
+      return { granted: false, error: 'Notification permission dismissed' };
+    }
+  } catch (error) {
+    console.error('Request permission error:', error);
+    return { granted: false, error: error.message };
+  }
+};
+
+// --- Get FCM Token ---
+export const getFCMToken = async () => {
+  try {
+    const messagingInstance = getMessagingInstance();
+    if (!messagingInstance) {
+      return { token: null, error: 'Messaging not available' };
+    }
+
+    // Check if service worker is registered
+    const registration = await navigator.serviceWorker.ready;
+
+    const token = await getToken(messagingInstance, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration
+    });
+
+    if (token) {
+      console.log('[FCM] Token obtained:', token.substring(0, 20) + '...');
+      return { token, error: null };
+    } else {
+      return { token: null, error: 'No registration token available' };
+    }
+  } catch (error) {
+    console.error('Get FCM token error:', error);
+    return { token: null, error: error.message };
+  }
+};
+
+// --- Save Notification Token to Firestore ---
+export const saveNotificationToken = async (userId, token) => {
+  try {
+    const tokenRef = doc(db, 'users', userId, 'notificationTokens', token);
+    await setDoc(tokenRef, {
+      token,
+      createdAt: serverTimestamp(),
+      platform: 'web',
+      userAgent: navigator.userAgent
+    });
+
+    // Also update user document with notifications enabled flag
+    await setDoc(doc(db, 'users', userId), {
+      notificationsEnabled: true,
+      lastTokenUpdate: serverTimestamp()
+    }, { merge: true });
+
+    return { error: null };
+  } catch (error) {
+    console.error('Save token error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Remove Notification Token ---
+export const removeNotificationToken = async (userId, token) => {
+  try {
+    const tokenRef = doc(db, 'users', userId, 'notificationTokens', token);
+    await deleteDoc(tokenRef);
+    return { error: null };
+  } catch (error) {
+    console.error('Remove token error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Listen for Foreground Messages ---
+export const onForegroundMessage = (callback) => {
+  const messagingInstance = getMessagingInstance();
+  if (!messagingInstance) {
+    console.warn('Messaging not available for foreground listener');
+    return () => {};
+  }
+
+  return onMessage(messagingInstance, (payload) => {
+    console.log('[FCM] Foreground message received:', payload);
+    callback(payload);
+  });
+};
+
+// --- Get User Notification Settings ---
+export const getNotificationSettings = async (userId) => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      return {
+        data: {
+          notificationsEnabled: data.notificationsEnabled || false,
+          priceAlerts: data.priceAlerts !== false, // default true
+          communityAlerts: data.communityAlerts !== false, // default true
+          streakReminders: data.streakReminders !== false // default true
+        },
+        error: null
+      };
+    }
+    return {
+      data: {
+        notificationsEnabled: false,
+        priceAlerts: true,
+        communityAlerts: true,
+        streakReminders: true
+      },
+      error: null
+    };
+  } catch (error) {
+    return { data: null, error: error.message };
+  }
+};
+
+// --- Update Notification Settings ---
+export const updateNotificationSettings = async (userId, settings) => {
+  try {
+    await setDoc(doc(db, 'users', userId), {
+      ...settings,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return { error: null };
+  } catch (error) {
+    return { error: error.message };
   }
 };

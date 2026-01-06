@@ -29,7 +29,13 @@ import {
   saveStatsToCloud,
   loadStatsFromCloud,
   updateStreak,
-  getUserStreak
+  getUserStreak,
+  requestNotificationPermission,
+  getFCMToken,
+  saveNotificationToken,
+  onForegroundMessage,
+  getNotificationSettings,
+  updateNotificationSettings
 } from './firebase';
 
 // ============================================================================
@@ -2668,7 +2674,7 @@ const INVESTMENT_STYLES = [
   { id: 'meme', emoji: '🚀', label: 'Meme Lord', desc: 'DOGE, PEPE, BONK life' },
 ];
 
-const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChange, userProfile, onProfileUpdate, userStreak }) => {
+const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChange, userProfile, onProfileUpdate, userStreak, notificationSettings, onEnableNotifications }) => {
   const [showSignUp, setShowSignUp] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
@@ -2678,6 +2684,7 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
   const [selectedStyle, setSelectedStyle] = useState(userProfile?.investmentStyle || null);
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [editingBio, setEditingBio] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   // Update investment style
   const handleStyleSelect = async (styleId) => {
@@ -2937,8 +2944,34 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
         <h3 className="font-bold mb-3">Settings</h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center py-2 border-b border-white/5">
-            <span className="text-slate-300">Notifications</span>
-            <span className="text-slate-500">Coming soon</span>
+            <div>
+              <span className="text-slate-300">Push Notifications</span>
+              <p className="text-slate-500 text-xs mt-0.5">Price alerts, streak reminders</p>
+            </div>
+            {user ? (
+              notificationSettings?.notificationsEnabled ? (
+                <span className="text-green-400 text-sm flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  Enabled
+                </span>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={async () => {
+                    setNotifLoading(true);
+                    await onEnableNotifications();
+                    setNotifLoading(false);
+                  }}
+                  disabled={notifLoading}
+                  className="px-3 py-1 bg-blue-500 rounded-lg text-xs font-medium disabled:opacity-50"
+                >
+                  {notifLoading ? 'Enabling...' : 'Enable'}
+                </motion.button>
+              )
+            ) : (
+              <span className="text-slate-500 text-xs">Sign in first</span>
+            )}
           </div>
           <div className="flex justify-between items-center py-2 border-b border-white/5">
             <span className="text-slate-300">Dark Mode</span>
@@ -3660,6 +3693,7 @@ export default function Swipefolio() {
   const [userRankData, setUserRankData] = useState(null); // User's rank data
   const [userProfile, setUserProfile] = useState(null); // User's profile data (bio, investment style)
   const [userStreak, setUserStreak] = useState(null); // User's streak data
+  const [notificationSettings, setNotificationSettings] = useState(null); // Push notification settings
 
   // Listen for auth state changes
   useEffect(() => {
@@ -3712,9 +3746,17 @@ export default function Swipefolio() {
           setUserStreak(streakData);
           console.log('🔥 Streak loaded:', streakData.currentStreak || 0, 'days');
         }
+
+        // Load notification settings
+        const { data: notifData } = await getNotificationSettings(currentUser.uid);
+        if (notifData) {
+          setNotificationSettings(notifData);
+          console.log('🔔 Notification settings loaded:', notifData.notificationsEnabled ? 'enabled' : 'disabled');
+        }
       } else {
         setUserProfile(null);
         setUserStreak(null);
+        setNotificationSettings(null);
       }
     });
     return () => unsubscribe();
@@ -3729,6 +3771,56 @@ export default function Swipefolio() {
       console.log('👤 Profile updated');
     }
   };
+
+  // Handle enabling push notifications
+  const handleEnableNotifications = async () => {
+    if (!user) return;
+
+    try {
+      // Step 1: Request permission
+      const { granted, error: permError } = await requestNotificationPermission();
+      if (!granted) {
+        console.warn('🔔 Notification permission not granted:', permError);
+        return;
+      }
+      console.log('🔔 Notification permission granted');
+
+      // Step 2: Get FCM token
+      const { token, error: tokenError } = await getFCMToken();
+      if (!token) {
+        console.error('🔔 Failed to get FCM token:', tokenError);
+        return;
+      }
+      console.log('🔔 FCM token obtained');
+
+      // Step 3: Save token to Firestore
+      await saveNotificationToken(user.uid, token);
+      console.log('🔔 Token saved to Firestore');
+
+      // Step 4: Update local state
+      setNotificationSettings(prev => ({
+        ...prev,
+        notificationsEnabled: true
+      }));
+
+      console.log('🔔 Push notifications enabled successfully!');
+    } catch (error) {
+      console.error('🔔 Error enabling notifications:', error);
+    }
+  };
+
+  // Listen for foreground notifications
+  useEffect(() => {
+    if (!notificationSettings?.notificationsEnabled) return;
+
+    const unsubscribe = onForegroundMessage((payload) => {
+      // Show in-app notification toast
+      console.log('🔔 Foreground message:', payload);
+      // Could add a toast notification here
+    });
+
+    return () => unsubscribe();
+  }, [notificationSettings?.notificationsEnabled]);
 
   // Get current categories based on asset type
   const currentCategories = assetType === 'crypto' ? CRYPTO_CATEGORIES : STOCK_CATEGORIES;
@@ -4822,6 +4914,8 @@ export default function Swipefolio() {
           userProfile={userProfile}
           onProfileUpdate={handleProfileUpdate}
           userStreak={userStreak}
+          notificationSettings={notificationSettings}
+          onEnableNotifications={handleEnableNotifications}
         />
       )}
 
