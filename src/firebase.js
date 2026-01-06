@@ -712,8 +712,7 @@ const getMessagingInstance = () => {
 };
 
 // VAPID key for web push (Firebase Console > Project Settings > Cloud Messaging > Web Push certificates)
-// This is a placeholder - you'll need to generate your own VAPID key
-const VAPID_KEY = 'YOUR_VAPID_KEY_HERE';
+const VAPID_KEY = 'BHFzhayIO-ulnpO3L1WLyS_Fi_Hibf-iXgiujMoITULJ81Q6esgZk0N3mp9QHDzPQmkd1hV1XBG3h8HJY9cYhmE';
 
 // --- Request Notification Permission ---
 export const requestNotificationPermission = async () => {

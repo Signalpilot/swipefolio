@@ -214,9 +214,97 @@ const TRADINGVIEW_SYMBOLS = {
   'pendle': 'BINANCE:PENDLEUSDT',
   'eigenlayer': 'BINANCE:EIGENUSDT',
   'bittensor': 'BYBIT:TAOUSDT',
+  // Exchange tokens
+  'kucoin-shares': 'KUCOIN:KCSUSDT',
+  'gate-token': 'GATEIO:GTUSDT',
+  'bitget-token': 'BITGET:BGBUSDT',
+  'mx-token': 'MEXC:MXUSDT',
+  'huobi-token': 'HTX:HTUSDT',
+  // AI & Gaming
+  'singularitynet': 'BINANCE:AGIXUSDT',
+  'akash-network': 'KUCOIN:AKTUSDT',
+  'render': 'BINANCE:RENDERUSDT',
+  'arweave': 'BINANCE:ARUSDT',
+  'worldcoin': 'BINANCE:WLDUSDT',
+  'iotaai': 'BINANCE:IOTAUSDT',
+  'illuvium': 'BINANCE:ILVUSDT',
+  'stepn': 'BINANCE:GMTUSDT',
+  'magic': 'BINANCE:MAGICUSDT',
+  'treasure': 'KUCOIN:MAGICUSDT',
+  // DeFi protocols
+  'lido-dao': 'BINANCE:LDOUSDT',
+  'thorchain': 'BINANCE:RUNEUSDT',
+  'just': 'BINANCE:JSTUSDT',
+  'convex-finance': 'BINANCE:CVXUSDT',
+  'ribbon-finance': 'BINANCE:RBNUSDT',
+  'spell-token': 'BINANCE:SPELLUSDT',
+  'joe': 'BINANCE:JOEUSDT',
+  'raydium': 'BYBIT:RAYUSDT',
+  'orca': 'KUCOIN:ORCAUSDT',
+  'marinade': 'BYBIT:MNDEUSD',
+  // More L1/L2
+  'mantle': 'BYBIT:MNTUSDT',
+  'base-protocol': 'COINBASE:BASEUSD',
+  'scroll': 'BINANCE:SCROLLUSDT',
+  'linea': 'BYBIT:LINEAUSDT',
+  'zksync': 'BINANCE:ZKUSDT',
+  'starknet': 'BINANCE:STRKUSDT',
+  'blast': 'BYBIT:BLASTUSDT',
+  'mode': 'BYBIT:MODEUSDT',
+  'manta-network': 'BINANCE:MANTAUSDT',
+  'beam': 'MEXC:BEAMUSDT',
+  'ronin': 'BINANCE:RONUSDT',
+  'echelon-prime': 'BYBIT:PRIMEUSDT',
+  'astar': 'BINANCE:ASTRUSDT',
+  'moonbeam': 'BINANCE:GLMRUSDT',
+  'moonriver': 'KUCOIN:MOVRUSDT',
+  'metis-token': 'KUCOIN:METISUSDT',
+  'canto': 'KUCOIN:CANTOUSDT',
+  // More meme coins
+  'memecoin': 'BYBIT:MEMEUSDT',
+  'turbo': 'BINANCE:TURBOUSDT',
+  'neiro': 'BINANCE:NEIROUSDT',
+  'moodeng': 'BYBIT:MOODENGUSDT',
+  'goatseus-maximus': 'BYBIT:GOATUSDT',
+  'ponke': 'BYBIT:PONKEUSDT',
+  'gigachad': 'BYBIT:GIGAUSDT',
+  'mother-iggy': 'BYBIT:MOTHERUSDT',
+  'myro': 'BYBIT:MYROUSDT',
+  'wen': 'BYBIT:WENUSDT',
+  'slerf': 'BYBIT:SLERFUSDT',
+  'jeo-boden': 'BYBIT:BODENUSDT',
+  // RWA & utility
+  'chainlink-ccip': 'BINANCE:LINKUSDT',
+  'tokenfi': 'KUCOIN:TOKENUSDT',
+  'polymesh': 'KUCOIN:POLYXUSDT',
+  'centrifuge': 'COINBASE:CFGUSD',
+  'maple': 'COINBASE:MPLUSD',
+  'clearpool': 'KUCOIN:CPOOLUSDT',
+  // Privacy coins
+  'zcash': 'BINANCE:ZECUSDT',
+  'secret': 'BINANCE:SCRTUSDT',
+  'oasis-network': 'BINANCE:ROSEUSDT',
+  'dusk-network': 'BINANCE:DUSKUSDT',
+  // Infrastructure
+  'helium': 'COINBASE:HNTUSD',
+  'iotex': 'BINANCE:IOTXUSDT',
+  'deeper-network': 'KUCOIN:DPRUSDT',
+  'flux': 'KUCOIN:FLUXUSDT',
+  'dvpn': 'KUCOIN:DVPNUSDT',
 };
 
-// Get TradingView symbol - every coin has a chart!
+// Check if a coin has a verified TradingView symbol
+const hasVerifiedChart = (coin) => {
+  // Verified in our mapping
+  if (TRADINGVIEW_SYMBOLS[coin.id]) return true;
+  // Stocks are always on NASDAQ/NYSE
+  if (coin.isStock) return true;
+  // Allow coins in top 100 market cap (they're usually on major exchanges)
+  if (coin.market_cap_rank && coin.market_cap_rank <= 100) return true;
+  return false;
+};
+
+// Get TradingView symbol - with smart fallback for major coins
 const getTradingViewSymbol = (coin) => {
   // Check our verified mapping first (best quality)
   if (TRADINGVIEW_SYMBOLS[coin.id]) {
@@ -228,8 +316,8 @@ const getTradingViewSymbol = (coin) => {
     return `NASDAQ:${coin.symbol?.toUpperCase()}`;
   }
 
-  // For crypto, use BINANCE with USDT pair as default
-  // TradingView's symbol search is enabled, so it can find alternatives if needed
+  // Smart fallback for top coins not in our mapping
+  // Try BINANCE first (most comprehensive), then BYBIT
   const symbol = coin.symbol?.toUpperCase();
   return `BINANCE:${symbol}USDT`;
 };
@@ -4767,7 +4855,7 @@ export default function Swipefolio() {
                     coin={coin}
                     isTop={i === 0}
                     onSwipe={handleSwipe}
-                    onTap={(coin) => setDetailModal(coin)}
+                    onTap={hasVerifiedChart(coin) ? (coin) => setDetailModal(coin) : null}
                     zIndex={3 - i}
                     coinStats={coinStats[coin.id]}
                     style={{
