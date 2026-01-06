@@ -9,6 +9,7 @@ import {
   logOut,
   onAuthStateChanged,
   saveUserProfile,
+  getUserProfile,
   saveSwipe,
   getInvestorMatches,
   sendChatMessage,
@@ -2562,13 +2563,42 @@ const BottomNav = ({ activeTab, onTabChange, portfolioCount, isPremium }) => {
 // ACCOUNT TAB COMPONENT
 // ============================================================================
 
-const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChange }) => {
+// Investment Style Options
+const INVESTMENT_STYLES = [
+  { id: 'diamond', emoji: '💎', label: 'Diamond Hands', desc: 'HODL forever, never sell' },
+  { id: 'degen', emoji: '🦍', label: 'Degen Ape', desc: 'High risk, high reward' },
+  { id: 'swing', emoji: '📊', label: 'Swing Trader', desc: 'Ride the waves' },
+  { id: 'value', emoji: '🎯', label: 'Value Hunter', desc: 'Undervalued gems only' },
+  { id: 'whale', emoji: '🐋', label: 'Whale Watcher', desc: 'Follow the big money' },
+  { id: 'meme', emoji: '🚀', label: 'Meme Lord', desc: 'DOGE, PEPE, BONK life' },
+];
+
+const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChange, userProfile, onProfileUpdate }) => {
   const [showSignUp, setShowSignUp] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedStyle, setSelectedStyle] = useState(userProfile?.investmentStyle || null);
+  const [bio, setBio] = useState(userProfile?.bio || '');
+  const [editingBio, setEditingBio] = useState(false);
+
+  // Update investment style
+  const handleStyleSelect = async (styleId) => {
+    setSelectedStyle(styleId);
+    if (user && onProfileUpdate) {
+      await onProfileUpdate({ investmentStyle: styleId });
+    }
+  };
+
+  // Save bio
+  const handleSaveBio = async () => {
+    if (user && onProfileUpdate) {
+      await onProfileUpdate({ bio });
+      setEditingBio(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -2714,6 +2744,91 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
           </div>
         </div>
       </div>
+
+      {/* Investment Style */}
+      {user && (
+        <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-white/5">
+          <h3 className="font-bold mb-3 flex items-center gap-2">
+            Investment Style
+            {selectedStyle && (
+              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                {INVESTMENT_STYLES.find(s => s.id === selectedStyle)?.emoji}
+              </span>
+            )}
+          </h3>
+          <p className="text-slate-400 text-xs mb-3">Choose your trading personality</p>
+          <div className="grid grid-cols-2 gap-2">
+            {INVESTMENT_STYLES.map(style => (
+              <motion.button
+                key={style.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleStyleSelect(style.id)}
+                className={`p-3 rounded-xl text-left transition-all ${
+                  selectedStyle === style.id
+                    ? 'bg-blue-500/20 border-2 border-blue-500'
+                    : 'bg-slate-700/50 border-2 border-transparent hover:border-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{style.emoji}</span>
+                  <span className="font-bold text-sm">{style.label}</span>
+                </div>
+                <p className="text-slate-400 text-[10px]">{style.desc}</p>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bio Section */}
+      {user && (
+        <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-white/5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold">Bio</h3>
+            {!editingBio && (
+              <button
+                onClick={() => setEditingBio(true)}
+                className="text-blue-400 text-xs hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+          {editingBio ? (
+            <div className="space-y-2">
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value.slice(0, 160))}
+                placeholder="Tell others about your investment journey..."
+                className="w-full h-20 bg-slate-700/50 rounded-xl p-3 text-sm border border-white/10 focus:outline-none focus:border-blue-500 resize-none"
+                maxLength={160}
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 text-xs">{bio.length}/160</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setEditingBio(false); setBio(userProfile?.bio || ''); }}
+                    className="px-3 py-1 text-slate-400 text-sm hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveBio}
+                    className="px-4 py-1 bg-blue-500 rounded-lg text-sm font-medium"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-slate-300 text-sm">
+              {bio || <span className="text-slate-500 italic">No bio yet. Tell others about yourself!</span>}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Settings */}
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
@@ -3441,6 +3556,7 @@ export default function Swipefolio() {
   const [coinStats, setCoinStats] = useState({}); // Real community swipe stats from Firestore
   const [leaderboardData, setLeaderboardData] = useState([]); // Real leaderboard from Firestore
   const [userRankData, setUserRankData] = useState(null); // User's rank data
+  const [userProfile, setUserProfile] = useState(null); // User's profile data (bio, investment style)
 
   // Listen for auth state changes
   useEffect(() => {
@@ -3479,10 +3595,29 @@ export default function Swipefolio() {
           localStorage.setItem('swipefolio_stats', JSON.stringify(statsResult.data));
           console.log('📊 Stats synced from cloud');
         }
+
+        // Load user profile (bio, investment style)
+        const { data: profileData } = await getUserProfile(currentUser.uid);
+        if (profileData) {
+          setUserProfile(profileData);
+          console.log('👤 Profile loaded:', profileData.investmentStyle || 'no style set');
+        }
+      } else {
+        setUserProfile(null);
       }
     });
     return () => unsubscribe();
   }, []);
+
+  // Handle profile update
+  const handleProfileUpdate = async (updates) => {
+    if (!user) return;
+    const { error } = await saveUserProfile(user.uid, updates);
+    if (!error) {
+      setUserProfile(prev => ({ ...prev, ...updates }));
+      console.log('👤 Profile updated');
+    }
+  };
 
   // Get current categories based on asset type
   const currentCategories = assetType === 'crypto' ? CRYPTO_CATEGORIES : STOCK_CATEGORIES;
@@ -4566,6 +4701,8 @@ export default function Swipefolio() {
           stats={stats}
           user={user}
           onUserChange={setUser}
+          userProfile={userProfile}
+          onProfileUpdate={handleProfileUpdate}
         />
       )}
 
