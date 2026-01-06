@@ -1,7 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import { createChart } from 'lightweight-charts';
-import { auth, signInWithGoogle, signInWithApple, signInWithEmail, logOut, onAuthStateChanged } from './firebase';
+import {
+  auth,
+  signInWithGoogle,
+  signInWithApple,
+  signInWithEmail,
+  logOut,
+  onAuthStateChanged,
+  saveUserProfile,
+  saveSwipe,
+  getInvestorMatches,
+  sendChatMessage,
+  subscribeToChatRoom,
+  sendMatchRequest,
+  acceptMatchRequest,
+  getMatchRequests,
+  getUserConnections,
+  sendDirectMessage,
+  subscribeToDirectMessages,
+  getTrendingCoins
+} from './firebase';
 
 // ============================================================================
 // SWIPEFOLIO - Swipe. Match. Invest.
@@ -93,12 +112,9 @@ const TRADINGVIEW_SYMBOLS = {
   'hyperliquid': 'BYBIT:HYPEUSDT',
 };
 
-// Fallback exchange order for coins not in mapping
-const EXCHANGE_FALLBACKS = ['BINANCE', 'COINBASE', 'KRAKEN', 'BITFINEX', 'OKX', 'BYBIT'];
-
-// Get best TradingView symbol for a coin
+// Get best TradingView symbol for a coin - tries multiple exchanges
 const getTradingViewSymbol = (coin) => {
-  // Check direct mapping first
+  // Check direct mapping first (known working symbols)
   if (TRADINGVIEW_SYMBOLS[coin.id]) {
     return TRADINGVIEW_SYMBOLS[coin.id];
   }
@@ -108,9 +124,35 @@ const getTradingViewSymbol = (coin) => {
     return `NASDAQ:${coin.symbol?.toUpperCase()}`;
   }
 
-  // Default to Binance USDT pair
   const symbol = coin.symbol?.toUpperCase();
-  return `BINANCE:${symbol}USDT`;
+
+  // Check if CoinGecko provided exchange info in tickers
+  if (coin.tickers && coin.tickers.length > 0) {
+    // Find a good exchange from tickers
+    const preferredExchanges = ['binance', 'coinbase', 'kraken', 'okx', 'bybit', 'bitfinex'];
+    for (const ex of preferredExchanges) {
+      const ticker = coin.tickers.find(t =>
+        t.market?.identifier?.toLowerCase() === ex &&
+        (t.target === 'USDT' || t.target === 'USD')
+      );
+      if (ticker) {
+        const exchangeName = ex.toUpperCase();
+        const pair = ticker.target === 'USD' ? `${symbol}USD` : `${symbol}USDT`;
+        return `${exchangeName}:${pair}`;
+      }
+    }
+  }
+
+  // Smart fallback based on market cap ranking
+  // Top coins are usually on all exchanges, use Binance
+  // For smaller coins, try CRYPTO exchange (aggregated)
+  if (coin.market_cap_rank && coin.market_cap_rank <= 100) {
+    return `BINANCE:${symbol}USDT`;
+  }
+
+  // For coins not in top 100, use CRYPTO which aggregates multiple exchanges
+  // or try the symbol directly (TradingView will find it)
+  return `CRYPTO:${symbol}USD`;
 };
 
 // Categories for filtering - CRYPTO
@@ -956,30 +998,13 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
   const handleDragEnd = (event, info) => {
     const threshold = 100;
     const velocity = info.velocity.x;
-    const dragDistance = Math.sqrt(
-      Math.pow(info.offset.x, 2) + Math.pow(info.offset.y, 2)
-    );
-    const dragTime = Date.now() - (dragStartRef.current?.time || 0);
 
-    // If minimal drag (less than 20px) and quick tap (less than 200ms), treat as tap
-    if (dragDistance < 20 && dragTime < 200 && isTop && onTap) {
-      onTap(coin);
-      return;
-    }
-
+    // Only process actual swipes, not taps
+    // (we have a dedicated View Chart button for opening charts)
     if (info.offset.x > threshold || velocity > 500) {
       onSwipe('right');
     } else if (info.offset.x < -threshold || velocity < -500) {
       onSwipe('left');
-    }
-  };
-
-  // Direct click handler for chart tap
-  const handleCardClick = (e) => {
-    // Only trigger if not dragging
-    if (!dragStartRef.current?.time || Date.now() - dragStartRef.current.time > 200) return;
-    if (isTop && onTap) {
-      onTap(coin);
     }
   };
 
@@ -1142,35 +1167,26 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
                 <SparklineSVG data={sparklineData.slice(-24)} positive={isPositive} />
               </div>
               {isTop && onTap && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  onPointerUp={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onTap(coin);
-                  }}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onTouchEnd={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 active:scale-95 transition-transform touch-manipulation"
-                  style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'none' }}
+                <div
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerMove={(e) => e.stopPropagation()}
+                  onPointerUp={(e) => e.stopPropagation()}
+                  style={{ touchAction: 'none' }}
                 >
-                  <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                  </svg>
-                  <span className="text-[10px] font-medium text-purple-400">View Chart</span>
-                </motion.button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTap(coin);
+                    }}
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 active:scale-95 transition-transform touch-manipulation"
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                    <span className="text-[10px] font-medium text-purple-400">View Chart</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -2683,34 +2699,552 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
 // COMMUNITY TAB COMPONENT
 // ============================================================================
 
-const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote }) => {
+// Chat moderation utilities
+const BANNED_WORDS = [
+  'scam', 'rugpull', 'rug pull', 'ponzi', 'pump and dump',
+  // Add more inappropriate words as needed - keeping it family friendly
+  'fuck', 'shit', 'ass', 'bitch', 'dick', 'porn', 'xxx',
+  'nigger', 'faggot', 'retard',
+  // Crypto scam patterns
+  'send btc', 'send eth', 'double your', 'guaranteed profit',
+  'dm me for', 'whatsapp', 'telegram group'
+];
+
+const filterProfanity = (text) => {
+  let filtered = text.toLowerCase();
+  for (const word of BANNED_WORDS) {
+    const regex = new RegExp(word.replace(/\s+/g, '\\s*'), 'gi');
+    if (regex.test(filtered)) {
+      return { isClean: false, reason: 'Message contains inappropriate content' };
+    }
+  }
+  return { isClean: true, filtered: text };
+};
+
+const MESSAGE_COOLDOWN = 10000; // 10 seconds between messages
+const MAX_MESSAGE_LENGTH = 500;
+const lastMessageTimes = new Map(); // Track per-user cooldowns
+
+const canSendMessage = (userId) => {
+  const lastTime = lastMessageTimes.get(userId) || 0;
+  const now = Date.now();
+  if (now - lastTime < MESSAGE_COOLDOWN) {
+    const waitTime = Math.ceil((MESSAGE_COOLDOWN - (now - lastTime)) / 1000);
+    return { allowed: false, waitTime };
+  }
+  return { allowed: true };
+};
+
+const recordMessageSent = (userId) => {
+  lastMessageTimes.set(userId, Date.now());
+};
+
+const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user }) => {
+  const [activeSection, setActiveSection] = useState('matches');
+  const [investorMatches, setInvestorMatches] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [matchRequests, setMatchRequests] = useState([]);
+  const [selectedChatRoom, setSelectedChatRoom] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [dmPartner, setDmPartner] = useState(null);
+  const [dmMessages, setDmMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [trendingCoins, setTrendingCoins] = useState([]);
+  const [chatError, setChatError] = useState(null);
+  const [cooldownTime, setCooldownTime] = useState(0);
+  const messagesEndRef = useRef(null);
+
+  // Load investor matches
+  useEffect(() => {
+    if (user && activeSection === 'matches') {
+      setLoading(true);
+      getInvestorMatches(user.uid).then(({ data }) => {
+        setInvestorMatches(data);
+        setLoading(false);
+      });
+    }
+  }, [user, activeSection]);
+
+  // Load connections and requests
+  useEffect(() => {
+    if (user && activeSection === 'connections') {
+      getUserConnections(user.uid).then(({ data }) => setConnections(data));
+      getMatchRequests(user.uid).then(({ data }) => setMatchRequests(data));
+    }
+  }, [user, activeSection]);
+
+  // Load trending coins
+  useEffect(() => {
+    if (activeSection === 'trending') {
+      getTrendingCoins().then(({ data }) => setTrendingCoins(data));
+    }
+  }, [activeSection]);
+
+  // Subscribe to chat room
+  useEffect(() => {
+    if (selectedChatRoom) {
+      const unsubscribe = subscribeToChatRoom(selectedChatRoom.id, (messages) => {
+        setChatMessages(messages);
+      });
+      return () => unsubscribe();
+    }
+  }, [selectedChatRoom]);
+
+  // Subscribe to DMs
+  useEffect(() => {
+    if (user && dmPartner) {
+      const unsubscribe = subscribeToDirectMessages(user.uid, dmPartner.id, (messages) => {
+        setDmMessages(messages);
+      });
+      return () => unsubscribe();
+    }
+  }, [user, dmPartner]);
+
+  // Scroll to bottom of messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, dmMessages]);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    if (cooldownTime > 0) {
+      const timer = setTimeout(() => setCooldownTime(cooldownTime - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownTime]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !user) return;
+    setChatError(null);
+
+    // Check message length
+    if (newMessage.length > MAX_MESSAGE_LENGTH) {
+      setChatError(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      return;
+    }
+
+    // Check rate limit
+    const cooldownCheck = canSendMessage(user.uid);
+    if (!cooldownCheck.allowed) {
+      setCooldownTime(cooldownCheck.waitTime);
+      setChatError(`Wait ${cooldownCheck.waitTime}s before sending another message`);
+      return;
+    }
+
+    // Check profanity filter
+    const filterResult = filterProfanity(newMessage);
+    if (!filterResult.isClean) {
+      setChatError(filterResult.reason);
+      return;
+    }
+
+    // Record message time for rate limiting
+    recordMessageSent(user.uid);
+
+    if (selectedChatRoom) {
+      await sendChatMessage(
+        selectedChatRoom.id,
+        user.uid,
+        user.displayName,
+        user.photoURL,
+        newMessage.trim()
+      );
+    } else if (dmPartner) {
+      await sendDirectMessage(user.uid, dmPartner.id, newMessage.trim());
+    }
+    setNewMessage('');
+  };
+
+  const handleConnect = async (targetUserId) => {
+    if (!user) return;
+    await sendMatchRequest(user.uid, targetUserId);
+    // Refresh matches
+    const { data } = await getInvestorMatches(user.uid);
+    setInvestorMatches(data);
+  };
+
+  const handleAcceptRequest = async (fromUserId) => {
+    if (!user) return;
+    await acceptMatchRequest(fromUserId, user.uid);
+    // Refresh connections and requests
+    getUserConnections(user.uid).then(({ data }) => setConnections(data));
+    getMatchRequests(user.uid).then(({ data }) => setMatchRequests(data));
+  };
+
+  // Not logged in
+  if (!user) {
+    return (
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <h2 className="text-xl font-bold">Community</h2>
+        <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl p-6 border border-purple-500/30 text-center">
+          <div className="text-4xl mb-3">🔐</div>
+          <h3 className="font-bold text-lg mb-2">Sign In to Join</h3>
+          <p className="text-slate-400 text-sm mb-4">
+            Sign in to match with investors, join chat rooms, and connect 1-on-1!
+          </p>
+        </div>
+
+        {/* Still show daily prediction */}
+        <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+          <DailyPrediction coins={coins} onVote={onPredictionVote} userVote={predictionVote} />
+        </div>
+        <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+          <Leaderboard portfolio={portfolio} />
+        </div>
+      </div>
+    );
+  }
+
+  // Chat Room View
+  if (selectedChatRoom) {
+    return (
+      <div className="flex-1 flex flex-col h-full">
+        {/* Header */}
+        <div className="p-4 border-b border-white/10 flex items-center gap-3">
+          <button onClick={() => setSelectedChatRoom(null)} className="text-slate-400 hover:text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          {selectedChatRoom.image && (
+            <img src={selectedChatRoom.image} className="w-8 h-8 rounded-full" alt="" />
+          )}
+          <div>
+            <h3 className="font-bold">{selectedChatRoom.symbol?.toUpperCase()} Chat</h3>
+            <p className="text-xs text-slate-400">{chatMessages.length} messages</p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {chatMessages.map((msg) => (
+            <div key={msg.id} className={`flex gap-2 ${msg.userId === user.uid ? 'flex-row-reverse' : ''}`}>
+              <div className="w-8 h-8 rounded-full bg-slate-700 flex-shrink-0 overflow-hidden">
+                {msg.userPhoto ? (
+                  <img src={msg.userPhoto} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm">
+                    {msg.userDisplayName?.[0] || '?'}
+                  </div>
+                )}
+              </div>
+              <div className={`max-w-[70%] ${msg.userId === user.uid ? 'text-right' : ''}`}>
+                <p className="text-xs text-slate-400 mb-1">{msg.userDisplayName}</p>
+                <div className={`p-2 rounded-lg ${msg.userId === user.uid ? 'bg-purple-600' : 'bg-slate-700'}`}>
+                  <p className="text-sm">{msg.message}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div className="p-4 border-t border-white/10 space-y-2">
+          {chatError && (
+            <p className="text-red-400 text-xs">{chatError}</p>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                setChatError(null);
+              }}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder={cooldownTime > 0 ? `Wait ${cooldownTime}s...` : "Type a message..."}
+              disabled={cooldownTime > 0}
+              maxLength={MAX_MESSAGE_LENGTH}
+              className="flex-1 bg-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={cooldownTime > 0}
+              className="px-4 py-2 bg-purple-600 rounded-lg font-medium text-sm hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {cooldownTime > 0 ? cooldownTime : 'Send'}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // DM View
+  if (dmPartner) {
+    return (
+      <div className="flex-1 flex flex-col h-full">
+        {/* Header */}
+        <div className="p-4 border-b border-white/10 flex items-center gap-3">
+          <button onClick={() => setDmPartner(null)} className="text-slate-400 hover:text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden">
+            {dmPartner.photoURL ? (
+              <img src={dmPartner.photoURL} className="w-full h-full object-cover" alt="" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-sm">
+                {dmPartner.displayName?.[0] || '?'}
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="font-bold">{dmPartner.displayName}</h3>
+            <p className="text-xs text-slate-400">Direct Message</p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {dmMessages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.from === user.uid ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[70%] p-3 rounded-lg ${msg.from === user.uid ? 'bg-purple-600' : 'bg-slate-700'}`}>
+                <p className="text-sm">{msg.message}</p>
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div className="p-4 border-t border-white/10 space-y-2">
+          {chatError && (
+            <p className="text-red-400 text-xs">{chatError}</p>
+          )}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                setChatError(null);
+              }}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder={cooldownTime > 0 ? `Wait ${cooldownTime}s...` : "Type a message..."}
+              disabled={cooldownTime > 0}
+              maxLength={MAX_MESSAGE_LENGTH}
+              className="flex-1 bg-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={cooldownTime > 0}
+              className="px-4 py-2 bg-purple-600 rounded-lg font-medium text-sm hover:bg-purple-500 transition-colors disabled:opacity-50"
+            >
+              {cooldownTime > 0 ? cooldownTime : 'Send'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       <h2 className="text-xl font-bold">Community</h2>
 
+      {/* Section Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {[
+          { id: 'matches', label: 'Matches', emoji: '💜' },
+          { id: 'chatrooms', label: 'Chat Rooms', emoji: '💬' },
+          { id: 'connections', label: 'Connections', emoji: '🤝' },
+          { id: 'trending', label: 'Trending', emoji: '🔥' },
+        ].map((section) => (
+          <button
+            key={section.id}
+            onClick={() => setActiveSection(section.id)}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+              activeSection === section.id
+                ? 'bg-purple-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            {section.emoji} {section.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Investor Matches Section */}
+      {activeSection === 'matches' && (
+        <div className="space-y-3">
+          <p className="text-slate-400 text-sm">People who APE the same coins as you</p>
+          {loading ? (
+            <div className="text-center py-8 text-slate-400">Loading matches...</div>
+          ) : investorMatches.length === 0 ? (
+            <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
+              <div className="text-4xl mb-3">🦍</div>
+              <p className="text-slate-400">Swipe more to find your matches!</p>
+              <p className="text-xs text-slate-500 mt-2">APE coins to match with like-minded investors</p>
+            </div>
+          ) : (
+            investorMatches.map((match) => (
+              <div key={match.id} className="bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                  {match.photoURL ? (
+                    <img src={match.photoURL} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xl">
+                      {match.displayName?.[0] || '?'}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium truncate">{match.displayName}</h4>
+                  <p className="text-xs text-purple-400">{match.commonCoins} coins in common</p>
+                </div>
+                <button
+                  onClick={() => handleConnect(match.id)}
+                  className="px-3 py-1.5 bg-purple-600 rounded-lg text-sm font-medium hover:bg-purple-500 transition-colors"
+                >
+                  Connect
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Chat Rooms Section */}
+      {activeSection === 'chatrooms' && (
+        <div className="space-y-3">
+          <p className="text-slate-400 text-sm">Join discussions about your favorite coins</p>
+          {portfolio.slice(0, 10).map((pos) => (
+            <button
+              key={pos.id}
+              onClick={() => setSelectedChatRoom({ id: pos.id, symbol: pos.symbol, image: pos.image })}
+              className="w-full bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3 hover:border-purple-500/30 transition-colors text-left"
+            >
+              <img src={pos.image} className="w-10 h-10 rounded-full" alt={pos.symbol} />
+              <div className="flex-1">
+                <h4 className="font-medium">${pos.symbol?.toUpperCase()} Chat</h4>
+                <p className="text-xs text-slate-400">Join the conversation</p>
+              </div>
+              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ))}
+          {portfolio.length === 0 && (
+            <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
+              <div className="text-4xl mb-3">💬</div>
+              <p className="text-slate-400">APE some coins to unlock their chat rooms!</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Connections Section */}
+      {activeSection === 'connections' && (
+        <div className="space-y-4">
+          {/* Pending Requests */}
+          {matchRequests.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-slate-400">Pending Requests</h3>
+              {matchRequests.map((req) => (
+                <div key={req.id} className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden">
+                    {req.fromUser?.photoURL ? (
+                      <img src={req.fromUser.photoURL} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        {req.fromUser?.displayName?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">{req.fromUser?.displayName}</h4>
+                    <p className="text-xs text-purple-400">Wants to connect</p>
+                  </div>
+                  <button
+                    onClick={() => handleAcceptRequest(req.from)}
+                    className="px-3 py-1.5 bg-green-600 rounded-lg text-sm font-medium hover:bg-green-500"
+                  >
+                    Accept
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Your Connections */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-400">Your Connections</h3>
+            {connections.length === 0 ? (
+              <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
+                <div className="text-4xl mb-3">🤝</div>
+                <p className="text-slate-400">No connections yet</p>
+                <p className="text-xs text-slate-500 mt-2">Connect with investors from the Matches tab</p>
+              </div>
+            ) : (
+              connections.map((conn) => (
+                <button
+                  key={conn.id}
+                  onClick={() => setDmPartner(conn)}
+                  className="w-full bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3 hover:border-purple-500/30 transition-colors text-left"
+                >
+                  <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden">
+                    {conn.photoURL ? (
+                      <img src={conn.photoURL} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        {conn.displayName?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium">{conn.displayName}</h4>
+                    <p className="text-xs text-green-400">Connected</p>
+                  </div>
+                  <span className="text-sm text-purple-400">Message</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Trending Section */}
+      {activeSection === 'trending' && (
+        <div className="space-y-3">
+          <p className="text-slate-400 text-sm">Most APEd coins by the community</p>
+          {trendingCoins.length === 0 ? (
+            <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
+              <div className="text-4xl mb-3">🔥</div>
+              <p className="text-slate-400">No trending data yet</p>
+              <p className="text-xs text-slate-500 mt-2">Be the first to APE!</p>
+            </div>
+          ) : (
+            trendingCoins.map((coin, i) => (
+              <div key={coin.id} className="bg-slate-800/50 rounded-xl p-4 border border-white/5 flex items-center gap-3">
+                <span className="text-lg font-bold text-slate-500 w-6">#{i + 1}</span>
+                {coin.image && <img src={coin.image} className="w-8 h-8 rounded-full" alt="" />}
+                <div className="flex-1">
+                  <h4 className="font-medium">{coin.name || coin.symbol?.toUpperCase()}</h4>
+                  <p className="text-xs text-slate-400">${coin.symbol?.toUpperCase()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-green-400 font-bold">{coin.apeCount}</p>
+                  <p className="text-xs text-slate-400">APEs</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* Daily Prediction */}
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
-        <DailyPrediction
-          coins={coins}
-          onVote={onPredictionVote}
-          userVote={predictionVote}
-        />
+        <DailyPrediction coins={coins} onVote={onPredictionVote} userVote={predictionVote} />
       </div>
 
       {/* Leaderboard */}
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
         <Leaderboard portfolio={portfolio} />
-      </div>
-
-      {/* Coming Soon: Matches */}
-      <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl p-4 border border-purple-500/30">
-        <h3 className="font-bold mb-2 flex items-center gap-2">
-          💬 Investor Matching
-          <span className="text-xs bg-purple-500 px-2 py-0.5 rounded-full">Coming Soon</span>
-        </h3>
-        <p className="text-slate-400 text-sm">
-          Match with investors who APE the same coins! Join chat rooms and connect 1-on-1.
-        </p>
       </div>
     </div>
   );
@@ -2758,10 +3292,17 @@ export default function Swipefolio() {
 
   // Listen for auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         console.log('User signed in:', currentUser.email);
+        // Save/update user profile in Firestore
+        await saveUserProfile(currentUser.uid, {
+          displayName: currentUser.displayName || 'Anonymous',
+          email: currentUser.email,
+          photoURL: currentUser.photoURL,
+          createdAt: currentUser.metadata?.creationTime
+        });
       }
     });
     return () => unsubscribe();
@@ -3259,6 +3800,11 @@ export default function Swipefolio() {
       // RUG - pass
       setStats(prev => ({ ...prev, rugged: prev.rugged + 1 }));
       if (soundEnabled) playSound('rug');
+    }
+
+    // Save swipe to Firestore for community features (if user is logged in)
+    if (user) {
+      saveSwipe(user.uid, coin.id, coin, direction === 'right' ? 'ape' : 'rug');
     }
 
     setCurrentIndex(prev => prev + 1);
@@ -3823,6 +4369,7 @@ export default function Swipefolio() {
           portfolio={portfolio}
           predictionVote={predictionVote}
           onPredictionVote={handlePredictionVote}
+          user={user}
         />
       )}
 

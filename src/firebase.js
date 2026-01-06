@@ -10,7 +10,25 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove,
+  increment
+} from 'firebase/firestore';
 
 // Swipefolio Firebase Config
 const firebaseConfig = {
@@ -81,3 +99,299 @@ export const logOut = async () => {
 };
 
 export { onAuthStateChanged };
+
+// ============================================================================
+// FIRESTORE - Community Features
+// ============================================================================
+
+// --- User Profile ---
+export const saveUserProfile = async (userId, data) => {
+  try {
+    await setDoc(doc(db, 'users', userId), {
+      ...data,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return { error: null };
+  } catch (error) {
+    console.error('Save profile error:', error);
+    return { error: error.message };
+  }
+};
+
+export const getUserProfile = async (userId) => {
+  try {
+    const docSnap = await getDoc(doc(db, 'users', userId));
+    return { data: docSnap.exists() ? docSnap.data() : null, error: null };
+  } catch (error) {
+    return { data: null, error: error.message };
+  }
+};
+
+// --- Swipe Tracking (APE/RUG) ---
+export const saveSwipe = async (userId, coinId, coinData, direction) => {
+  try {
+    const swipeRef = doc(db, 'users', userId, 'swipes', coinId);
+    await setDoc(swipeRef, {
+      coinId,
+      symbol: coinData.symbol,
+      name: coinData.name,
+      image: coinData.image,
+      direction, // 'ape' or 'rug'
+      priceAtSwipe: coinData.current_price,
+      swipedAt: serverTimestamp()
+    });
+
+    // Also update coin's APE/RUG count for matching
+    const coinStatsRef = doc(db, 'coinStats', coinId);
+    if (direction === 'ape') {
+      await setDoc(coinStatsRef, {
+        apeCount: increment(1),
+        apers: arrayUnion(userId),
+        symbol: coinData.symbol,
+        name: coinData.name,
+        image: coinData.image
+      }, { merge: true });
+    }
+
+    return { error: null };
+  } catch (error) {
+    console.error('Save swipe error:', error);
+    return { error: error.message };
+  }
+};
+
+export const getUserSwipes = async (userId) => {
+  try {
+    const swipesRef = collection(db, 'users', userId, 'swipes');
+    const q = query(swipesRef, orderBy('swipedAt', 'desc'));
+    const snapshot = await getDocs(q);
+    const swipes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return { data: swipes, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Investor Matching ---
+export const getInvestorMatches = async (userId) => {
+  try {
+    // Get user's APEd coins
+    const userSwipesRef = collection(db, 'users', userId, 'swipes');
+    const userSwipesQ = query(userSwipesRef, where('direction', '==', 'ape'));
+    const userSwipes = await getDocs(userSwipesQ);
+    const userApes = userSwipes.docs.map(d => d.id);
+
+    if (userApes.length === 0) return { data: [], error: null };
+
+    // Find other users who APEd the same coins
+    const matchScores = {};
+
+    for (const coinId of userApes.slice(0, 10)) { // Limit to avoid too many queries
+      const coinStatsRef = doc(db, 'coinStats', coinId);
+      const coinStats = await getDoc(coinStatsRef);
+      if (coinStats.exists()) {
+        const apers = coinStats.data().apers || [];
+        for (const aperId of apers) {
+          if (aperId !== userId) {
+            matchScores[aperId] = (matchScores[aperId] || 0) + 1;
+          }
+        }
+      }
+    }
+
+    // Get user profiles for matches
+    const matches = [];
+    const sortedMatches = Object.entries(matchScores)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20);
+
+    for (const [matchUserId, score] of sortedMatches) {
+      const userDoc = await getDoc(doc(db, 'users', matchUserId));
+      if (userDoc.exists()) {
+        matches.push({
+          id: matchUserId,
+          ...userDoc.data(),
+          matchScore: score,
+          commonCoins: score
+        });
+      }
+    }
+
+    return { data: matches, error: null };
+  } catch (error) {
+    console.error('Get matches error:', error);
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Chat Rooms (per-coin) ---
+export const sendChatMessage = async (coinId, userId, userDisplayName, userPhoto, message) => {
+  try {
+    const messagesRef = collection(db, 'chatRooms', coinId, 'messages');
+    const newMsgRef = doc(messagesRef);
+    await setDoc(newMsgRef, {
+      userId,
+      userDisplayName: userDisplayName || 'Anonymous',
+      userPhoto: userPhoto || null,
+      message,
+      createdAt: serverTimestamp()
+    });
+    return { error: null };
+  } catch (error) {
+    console.error('Send message error:', error);
+    return { error: error.message };
+  }
+};
+
+export const subscribeToChatRoom = (coinId, callback) => {
+  const messagesRef = collection(db, 'chatRooms', coinId, 'messages');
+  const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(50));
+
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })).reverse();
+    callback(messages);
+  });
+};
+
+export const getChatRoomStats = async (coinId) => {
+  try {
+    const messagesRef = collection(db, 'chatRooms', coinId, 'messages');
+    const snapshot = await getDocs(messagesRef);
+    return { messageCount: snapshot.size, error: null };
+  } catch (error) {
+    return { messageCount: 0, error: error.message };
+  }
+};
+
+// --- 1-on-1 Matching ---
+export const sendMatchRequest = async (fromUserId, toUserId) => {
+  try {
+    const requestRef = doc(db, 'matchRequests', `${fromUserId}_${toUserId}`);
+    await setDoc(requestRef, {
+      from: fromUserId,
+      to: toUserId,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+    return { error: null };
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+export const acceptMatchRequest = async (fromUserId, toUserId) => {
+  try {
+    // Update request status
+    const requestRef = doc(db, 'matchRequests', `${fromUserId}_${toUserId}`);
+    await updateDoc(requestRef, { status: 'accepted' });
+
+    // Create mutual connection
+    const conn1 = doc(db, 'users', fromUserId, 'connections', toUserId);
+    const conn2 = doc(db, 'users', toUserId, 'connections', fromUserId);
+    await setDoc(conn1, { connectedAt: serverTimestamp() });
+    await setDoc(conn2, { connectedAt: serverTimestamp() });
+
+    return { error: null };
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+export const getMatchRequests = async (userId) => {
+  try {
+    const requestsRef = collection(db, 'matchRequests');
+    const q = query(requestsRef, where('to', '==', userId), where('status', '==', 'pending'));
+    const snapshot = await getDocs(q);
+
+    const requests = [];
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      const fromUser = await getDoc(doc(db, 'users', data.from));
+      if (fromUser.exists()) {
+        requests.push({
+          id: docSnap.id,
+          ...data,
+          fromUser: fromUser.data()
+        });
+      }
+    }
+
+    return { data: requests, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+export const getUserConnections = async (userId) => {
+  try {
+    const connectionsRef = collection(db, 'users', userId, 'connections');
+    const snapshot = await getDocs(connectionsRef);
+
+    const connections = [];
+    for (const connDoc of snapshot.docs) {
+      const userDoc = await getDoc(doc(db, 'users', connDoc.id));
+      if (userDoc.exists()) {
+        connections.push({
+          id: connDoc.id,
+          ...userDoc.data(),
+          connectedAt: connDoc.data().connectedAt
+        });
+      }
+    }
+
+    return { data: connections, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Direct Messages ---
+export const sendDirectMessage = async (fromUserId, toUserId, message) => {
+  try {
+    // Create consistent chat ID (alphabetically sorted)
+    const chatId = [fromUserId, toUserId].sort().join('_');
+    const messagesRef = collection(db, 'directMessages', chatId, 'messages');
+    const newMsgRef = doc(messagesRef);
+    await setDoc(newMsgRef, {
+      from: fromUserId,
+      message,
+      createdAt: serverTimestamp()
+    });
+    return { error: null };
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+export const subscribeToDirectMessages = (userId1, userId2, callback) => {
+  const chatId = [userId1, userId2].sort().join('_');
+  const messagesRef = collection(db, 'directMessages', chatId, 'messages');
+  const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(100));
+
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })).reverse();
+    callback(messages);
+  });
+};
+
+// --- Trending Coins (by APE count) ---
+export const getTrendingCoins = async () => {
+  try {
+    const coinStatsRef = collection(db, 'coinStats');
+    const q = query(coinStatsRef, orderBy('apeCount', 'desc'), limit(10));
+    const snapshot = await getDocs(q);
+    const trending = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    return { data: trending, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
