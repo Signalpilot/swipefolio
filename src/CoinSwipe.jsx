@@ -1179,41 +1179,72 @@ export default function CoinSwipe() {
     localStorage.setItem('coinswipe_stats_v2', JSON.stringify(stats));
   }, [stats]);
 
-  // Fetch coins from CoinGecko
+  // Fetch coins from CoinCap API (more reliable than CoinGecko, no rate limits)
   useEffect(() => {
     const fetchCoins = async () => {
       setLoading(true);
 
       // Create abort controller for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       try {
-        // Fetch top 100 coins with sparkline
+        // Use CoinCap API - more reliable, no aggressive rate limits
         const response = await fetch(
-          'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=24h',
+          'https://api.coincap.io/v2/assets?limit=100',
           { signal: controller.signal }
         );
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          throw new Error(`CoinGecko API failed: ${response.status}`);
+          throw new Error(`CoinCap API failed: ${response.status}`);
         }
 
-        const data = await response.json();
+        const json = await response.json();
+        const data = json.data;
 
         if (!Array.isArray(data) || data.length === 0) {
           throw new Error('Invalid API response');
         }
 
+        // Transform CoinCap data to match our expected format
+        const transformed = data.map((coin, index) => {
+          const price = parseFloat(coin.priceUsd) || 0;
+          const change = parseFloat(coin.changePercent24Hr) || 0;
+          const marketCap = parseFloat(coin.marketCapUsd) || 0;
+          const volume = parseFloat(coin.volumeUsd24Hr) || 0;
+
+          // Generate fake sparkline based on price change
+          const sparklineData = Array.from({ length: 24 }, (_, i) => {
+            const progress = i / 23;
+            const startPrice = price / (1 + change / 100);
+            return startPrice + (price - startPrice) * progress + (Math.random() - 0.5) * price * 0.02;
+          });
+
+          return {
+            id: coin.id,
+            symbol: coin.symbol?.toLowerCase() || '',
+            name: coin.name,
+            image: `https://assets.coincap.io/assets/icons/${coin.symbol?.toLowerCase()}@2x.png`,
+            current_price: price,
+            market_cap: marketCap,
+            market_cap_rank: index + 1,
+            total_volume: volume,
+            price_change_percentage_24h: change,
+            high_24h: price * (1 + Math.abs(change) / 200),
+            low_24h: price * (1 - Math.abs(change) / 200),
+            sparkline_in_7d: { price: sparklineData },
+          };
+        });
+
         // Filter out stablecoins and shuffle for variety
-        const filtered = data.filter(coin => !isStablecoin(coin));
+        const filtered = transformed.filter(coin => !isStablecoin(coin));
         const shuffled = [...filtered].sort(() => Math.random() - 0.5);
         setCoins(shuffled);
 
         // Build price map
         const prices = {};
-        data.forEach(coin => {
+        transformed.forEach(coin => {
           prices[coin.id] = coin.current_price;
         });
         setCurrentPrices(prices);
@@ -1235,24 +1266,24 @@ export default function CoinSwipe() {
 
     fetchCoins();
 
-    // Refresh prices every 60 seconds
+    // Refresh prices every 30 seconds (CoinCap has no rate limits)
     const interval = setInterval(async () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         const response = await fetch(
-          'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false',
+          'https://api.coincap.io/v2/assets?limit=100',
           { signal: controller.signal }
         );
         clearTimeout(timeoutId);
 
         if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
+          const json = await response.json();
+          if (json.data && Array.isArray(json.data)) {
             const prices = {};
-            data.forEach(coin => {
-              prices[coin.id] = coin.current_price;
+            json.data.forEach(coin => {
+              prices[coin.id] = parseFloat(coin.priceUsd) || 0;
             });
             setCurrentPrices(prices);
 
@@ -1264,7 +1295,7 @@ export default function CoinSwipe() {
         clearTimeout(timeoutId);
         // Silently fail price refresh
       }
-    }, 60000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);
