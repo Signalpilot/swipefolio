@@ -1553,7 +1553,7 @@ export default function CoinSwipe() {
       setLoading(true);
       try {
         const stockData = await fetchStocksFromFinnhub();
-        if (stockData.length > 0) {
+        if (stockData && stockData.length > 0) {
           // Shuffle for variety
           const shuffled = [...stockData].sort(() => Math.random() - 0.5);
           setStocks(shuffled);
@@ -1564,11 +1564,27 @@ export default function CoinSwipe() {
             prices[stock.id] = stock.current_price;
           });
           setCurrentPrices(prices);
+        } else {
+          // API returned empty, use mock data
+          console.log('Finnhub returned empty, using mock stocks');
+          const mockData = getMockStocks();
+          setStocks(mockData);
+          const prices = { ...currentPrices };
+          mockData.forEach(stock => {
+            prices[stock.id] = stock.current_price;
+          });
+          setCurrentPrices(prices);
         }
       } catch (error) {
         console.error('Stock fetch error:', error);
         // Use mock stocks as fallback
-        setStocks(getMockStocks());
+        const mockData = getMockStocks();
+        setStocks(mockData);
+        const prices = { ...currentPrices };
+        mockData.forEach(stock => {
+          prices[stock.id] = stock.current_price;
+        });
+        setCurrentPrices(prices);
       }
       setLoading(false);
     };
