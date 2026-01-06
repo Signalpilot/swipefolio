@@ -141,7 +141,16 @@ export const saveSwipe = async (userId, coinId, coinData, direction) => {
       swipedAt: serverTimestamp()
     });
 
-    // Also update coin's APE/RUG count for matching
+    // Update user's swipe stats for leaderboard
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      totalSwipes: increment(1),
+      apeCount: increment(direction === 'ape' ? 1 : 0),
+      rugCount: increment(direction === 'rug' ? 1 : 0),
+      lastSwipeAt: serverTimestamp()
+    }, { merge: true });
+
+    // Update coin's APE/RUG count for social proof & matching
     const coinStatsRef = doc(db, 'coinStats', coinId);
     if (direction === 'ape') {
       await setDoc(coinStatsRef, {
@@ -149,7 +158,16 @@ export const saveSwipe = async (userId, coinId, coinData, direction) => {
         apers: arrayUnion(userId),
         symbol: coinData.symbol,
         name: coinData.name,
-        image: coinData.image
+        image: coinData.image,
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
+    } else if (direction === 'rug') {
+      await setDoc(coinStatsRef, {
+        rugCount: increment(1),
+        symbol: coinData.symbol,
+        name: coinData.name,
+        image: coinData.image,
+        lastUpdated: serverTimestamp()
       }, { merge: true });
     }
 
@@ -380,6 +398,51 @@ export const subscribeToDirectMessages = (userId1, userId2, callback) => {
   });
 };
 
+// --- Get Coin Stats (for social proof) ---
+export const getCoinStats = async (coinId) => {
+  try {
+    const coinStatsRef = doc(db, 'coinStats', coinId);
+    const docSnap = await getDoc(coinStatsRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const apeCount = data.apeCount || 0;
+      const rugCount = data.rugCount || 0;
+      const totalSwipes = apeCount + rugCount;
+      const apeRatio = totalSwipes > 0 ? Math.round((apeCount / totalSwipes) * 100) : null;
+      return {
+        data: {
+          ...data,
+          apeCount,
+          rugCount,
+          totalSwipes,
+          apeRatio
+        },
+        error: null
+      };
+    }
+    return { data: null, error: null };
+  } catch (error) {
+    return { data: null, error: error.message };
+  }
+};
+
+export const getCoinStatsBatch = async (coinIds) => {
+  try {
+    const stats = {};
+    // Fetch in parallel for better performance
+    const promises = coinIds.map(async (coinId) => {
+      const result = await getCoinStats(coinId);
+      if (result.data) {
+        stats[coinId] = result.data;
+      }
+    });
+    await Promise.all(promises);
+    return { data: stats, error: null };
+  } catch (error) {
+    return { data: {}, error: error.message };
+  }
+};
+
 // --- Trending Coins (by APE count) ---
 export const getTrendingCoins = async () => {
   try {
@@ -393,5 +456,127 @@ export const getTrendingCoins = async () => {
     return { data: trending, error: null };
   } catch (error) {
     return { data: [], error: error.message };
+  }
+};
+
+// --- Leaderboard (Top Swipers) ---
+export const getLeaderboard = async (limitCount = 10) => {
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, orderBy('totalSwipes', 'desc'), limit(limitCount));
+    const snapshot = await getDocs(q);
+
+    const leaderboard = snapshot.docs.map((doc, index) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        rank: index + 1,
+        displayName: data.displayName || 'Anonymous',
+        photoURL: data.photoURL,
+        totalSwipes: data.totalSwipes || 0,
+        apeCount: data.apeCount || 0,
+        rugCount: data.rugCount || 0,
+        apeRate: data.totalSwipes > 0
+          ? Math.round((data.apeCount / data.totalSwipes) * 100)
+          : 0
+      };
+    });
+
+    return { data: leaderboard, error: null };
+  } catch (error) {
+    console.error('Get leaderboard error:', error);
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Get User Rank ---
+export const getUserRank = async (userId) => {
+  try {
+    // Get user's total swipes
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) return { rank: null, error: null };
+
+    const userSwipes = userDoc.data().totalSwipes || 0;
+
+    // Count users with more swipes
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('totalSwipes', '>', userSwipes));
+    const snapshot = await getDocs(q);
+
+    return { rank: snapshot.size + 1, totalSwipes: userSwipes, error: null };
+  } catch (error) {
+    return { rank: null, error: error.message };
+  }
+};
+
+// ============================================================================
+// PORTFOLIO CLOUD SYNC
+// ============================================================================
+
+// --- Save Portfolio to Cloud ---
+export const savePortfolioToCloud = async (userId, portfolio) => {
+  try {
+    const portfolioRef = doc(db, 'users', userId, 'data', 'portfolio');
+    await setDoc(portfolioRef, {
+      positions: portfolio,
+      lastSyncedAt: serverTimestamp(),
+      positionCount: portfolio.length
+    });
+    return { error: null };
+  } catch (error) {
+    console.error('Save portfolio error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Load Portfolio from Cloud ---
+export const loadPortfolioFromCloud = async (userId) => {
+  try {
+    const portfolioRef = doc(db, 'users', userId, 'data', 'portfolio');
+    const docSnap = await getDoc(portfolioRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        data: data.positions || [],
+        lastSyncedAt: data.lastSyncedAt,
+        error: null
+      };
+    }
+    return { data: [], lastSyncedAt: null, error: null };
+  } catch (error) {
+    console.error('Load portfolio error:', error);
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Save User Stats to Cloud ---
+export const saveStatsToCloud = async (userId, stats) => {
+  try {
+    const statsRef = doc(db, 'users', userId, 'data', 'stats');
+    await setDoc(statsRef, {
+      ...stats,
+      lastSyncedAt: serverTimestamp()
+    });
+    return { error: null };
+  } catch (error) {
+    console.error('Save stats error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Load User Stats from Cloud ---
+export const loadStatsFromCloud = async (userId) => {
+  try {
+    const statsRef = doc(db, 'users', userId, 'data', 'stats');
+    const docSnap = await getDoc(statsRef);
+
+    if (docSnap.exists()) {
+      return { data: docSnap.data(), error: null };
+    }
+    return { data: null, error: null };
+  } catch (error) {
+    console.error('Load stats error:', error);
+    return { data: null, error: error.message };
   }
 };

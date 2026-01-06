@@ -9,6 +9,7 @@ import {
   logOut,
   onAuthStateChanged,
   saveUserProfile,
+  getUserProfile,
   saveSwipe,
   getInvestorMatches,
   sendChatMessage,
@@ -19,7 +20,14 @@ import {
   getUserConnections,
   sendDirectMessage,
   subscribeToDirectMessages,
-  getTrendingCoins
+  getTrendingCoins,
+  getCoinStatsBatch,
+  getLeaderboard,
+  getUserRank,
+  savePortfolioToCloud,
+  loadPortfolioFromCloud,
+  saveStatsToCloud,
+  loadStatsFromCloud
 } from './firebase';
 
 // ============================================================================
@@ -593,11 +601,51 @@ const formatPnL = (pnl) => {
 };
 
 // ============================================================================
-// COMMUNITY SENTIMENT (Phase 1 - Simulated, feels real)
+// COMMUNITY SENTIMENT (Real Firestore data with simulated fallback)
 // ============================================================================
 
-const getCommunitySentiment = (coin) => {
-  // Generate realistic-looking sentiment based on coin properties
+const getCommunitySentiment = (coin, coinStats = null) => {
+  // Use REAL Firestore data if available
+  if (coinStats && coinStats.totalSwipes > 0) {
+    const apeRate = coinStats.apeRatio;
+    const userCount = coinStats.totalSwipes;
+
+    // Generate comment based on real sentiment
+    const bullishComments = [
+      "Diamond hands only 💎",
+      "This is the way 🚀",
+      "Accumulating more",
+      "Bullish AF",
+      "Still early",
+      "LFG 🔥",
+      "Moon soon",
+      "Buy the dip",
+    ];
+
+    const bearishComments = [
+      "Be careful here",
+      "Taking profits",
+      "Waiting for lower",
+      "Risky at this level",
+      "Overextended imo",
+      "Not financial advice",
+    ];
+
+    const hash = coin.id.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
+    const seed = Math.abs(hash);
+    const commentPool = apeRate > 60 ? bullishComments : bearishComments;
+    const topComment = commentPool[seed % commentPool.length];
+
+    return {
+      apeRate: Math.round(apeRate),
+      userCount,
+      topComment,
+      sentiment: apeRate > 70 ? 'bullish' : apeRate > 45 ? 'neutral' : 'bearish',
+      isReal: true, // Flag to show this is real community data
+    };
+  }
+
+  // FALLBACK: Generate simulated sentiment based on coin properties
   // This creates consistent sentiment per coin (seeded by coin id hash)
   const hash = coin.id.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
   const seed = Math.abs(hash);
@@ -660,6 +708,7 @@ const getCommunitySentiment = (coin) => {
     userCount,
     topComment,
     sentiment: apeRate > 70 ? 'bullish' : apeRate > 45 ? 'neutral' : 'bearish',
+    isReal: false, // Flag to show this is simulated data
   };
 };
 
@@ -1100,7 +1149,7 @@ const GlowText = ({ children, color = 'blue', className = '' }) => {
 // SWIPEABLE CARD COMPONENT (Framer Motion Physics)
 // ============================================================================
 
-const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
+const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap, coinStats }) => {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const apeOpacity = useTransform(x, [0, 100], [0, 1]);
@@ -1345,14 +1394,18 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
 
         {/* Community & Risk - Combined Ultra Compact Row */}
         {(() => {
-          const sentiment = getCommunitySentiment(coin);
+          const sentiment = getCommunitySentiment(coin, coinStats);
           return (
             <div className="px-4 pb-1.5">
               <div className="flex gap-1.5">
-                {/* Community Mini */}
-                <div className="flex-1 bg-slate-800/40 p-1.5 rounded-lg border border-white/5">
+                {/* Community Mini - Shows real data when available */}
+                <div className={`flex-1 p-1.5 rounded-lg border ${
+                  sentiment.isReal
+                    ? 'bg-blue-500/10 border-blue-500/20'
+                    : 'bg-slate-800/40 border-white/5'
+                }`}>
                   <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-slate-400 text-[10px]">👥</span>
+                    <span className="text-[10px]">{sentiment.isReal ? '🦍' : '👥'}</span>
                     <div className="flex-1 h-1 bg-slate-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${
@@ -1368,6 +1421,9 @@ const SwipeCard = ({ coin, onSwipe, isTop, style, zIndex, onTap }) => {
                     }`}>
                       {sentiment.apeRate}%
                     </span>
+                    {sentiment.isReal && (
+                      <span className="text-[8px] text-blue-400 font-semibold">LIVE</span>
+                    )}
                   </div>
                 </div>
                 {/* Risk Mini */}
@@ -1790,22 +1846,31 @@ const DailyPrediction = ({ coins, onVote, userVote }) => {
 // LEADERBOARD COMPONENT
 // ============================================================================
 
-const Leaderboard = ({ portfolio }) => {
-  // Generate fake leaderboard with user included
+const Leaderboard = ({ portfolio, user, leaderboardData, userRankData }) => {
+  // Fallback fake traders when no real data
   const fakeTraders = [
-    { name: 'DiamondHands', gain: 127, avatar: '💎' },
-    { name: 'DeFiDegen', gain: 89, avatar: '🦄' },
-    { name: 'MoonBoy', gain: 72, avatar: '🌙' },
-    { name: 'CryptoKing', gain: 58, avatar: '👑' },
-    { name: 'ApeStrong', gain: 45, avatar: '🦍' },
-    { name: 'WhaleAlert', gain: 38, avatar: '🐋' },
-    { name: 'SatoshiFan', gain: 29, avatar: '₿' },
-    { name: 'HODLer', gain: 22, avatar: '💪' },
+    { displayName: 'DiamondHands', totalSwipes: 127, apeRate: 78 },
+    { displayName: 'DeFiDegen', totalSwipes: 89, apeRate: 65 },
+    { displayName: 'MoonBoy', totalSwipes: 72, apeRate: 82 },
+    { displayName: 'CryptoKing', totalSwipes: 58, apeRate: 71 },
+    { displayName: 'ApeStrong', totalSwipes: 45, apeRate: 90 },
   ];
 
-  // Calculate user's gain (simplified)
-  const userGain = portfolio.length > 0 ? 12 + (portfolio.length * 3) : 0;
-  const userRank = fakeTraders.filter(t => t.gain > userGain).length + 1;
+  // Use real data or fallback
+  const traders = leaderboardData?.length > 0 ? leaderboardData : fakeTraders;
+  const isRealData = leaderboardData?.length > 0;
+
+  // User rank from real data or estimated
+  const userRank = userRankData?.rank || (portfolio.length > 0 ? Math.floor(Math.random() * 50) + 10 : null);
+  const userSwipes = userRankData?.totalSwipes || portfolio.length;
+
+  // Generate avatar based on ape rate
+  const getAvatar = (apeRate) => {
+    if (apeRate >= 80) return '🦍';
+    if (apeRate >= 60) return '💎';
+    if (apeRate >= 40) return '📊';
+    return '🎯';
+  };
 
   return (
     <motion.div
@@ -1818,31 +1883,67 @@ const Leaderboard = ({ portfolio }) => {
         <div className="flex items-center gap-2">
           <span className="text-xl">🏆</span>
           <span className="font-bold text-sm">Top Swipers</span>
+          {isRealData && (
+            <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-semibold">LIVE</span>
+          )}
         </div>
-        <span className="text-xs text-slate-400">This Week</span>
+        <span className="text-xs text-slate-400">All Time</span>
       </div>
 
       {/* Top 3 */}
       <div className="space-y-2 mb-3">
-        {fakeTraders.slice(0, 3).map((trader, i) => (
-          <div key={trader.name} className="flex items-center gap-3">
+        {traders.slice(0, 3).map((trader, i) => (
+          <div key={trader.id || trader.displayName} className="flex items-center gap-3">
             <span className="text-lg">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-            <span className="text-sm">{trader.avatar}</span>
-            <span className="text-sm font-medium flex-1">@{trader.name}</span>
-            <span className="text-green-400 text-sm font-bold">+{trader.gain}%</span>
+            {trader.photoURL ? (
+              <img src={trader.photoURL} alt="" className="w-5 h-5 rounded-full" />
+            ) : (
+              <span className="text-sm">{getAvatar(trader.apeRate)}</span>
+            )}
+            <span className="text-sm font-medium flex-1 truncate">
+              {trader.displayName?.split(' ')[0] || 'Anonymous'}
+            </span>
+            <div className="text-right">
+              <span className="text-cyan-400 text-sm font-bold">{trader.totalSwipes}</span>
+              <span className="text-slate-500 text-[10px] ml-1">swipes</span>
+            </div>
           </div>
         ))}
       </div>
 
+      {/* More traders */}
+      {traders.length > 3 && (
+        <div className="space-y-1.5 mb-3 pt-2 border-t border-white/5">
+          {traders.slice(3, 5).map((trader, i) => (
+            <div key={trader.id || trader.displayName} className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="w-5 text-center">#{i + 4}</span>
+              <span className="flex-1 truncate">{trader.displayName?.split(' ')[0] || 'Anonymous'}</span>
+              <span className="text-cyan-400/70">{trader.totalSwipes}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* User rank */}
-      <div className="bg-blue-500/20 rounded-lg p-2 flex items-center gap-3 border border-blue-500/30">
-        <span className="text-sm font-bold text-blue-400">#{userRank}</span>
-        <span className="text-sm">😎</span>
-        <span className="text-sm font-medium flex-1">You</span>
-        <span className={`text-sm font-bold ${userGain > 0 ? 'text-green-400' : 'text-slate-400'}`}>
-          {userGain > 0 ? `+${userGain}%` : 'Start swiping!'}
-        </span>
-      </div>
+      {user ? (
+        <div className="bg-blue-500/20 rounded-lg p-2 flex items-center gap-3 border border-blue-500/30">
+          <span className="text-sm font-bold text-blue-400">#{userRank || '?'}</span>
+          {user.photoURL ? (
+            <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" />
+          ) : (
+            <span className="text-sm">😎</span>
+          )}
+          <span className="text-sm font-medium flex-1">You</span>
+          <div className="text-right">
+            <span className="text-cyan-400 text-sm font-bold">{userSwipes}</span>
+            <span className="text-slate-500 text-[10px] ml-1">swipes</span>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-700/30 rounded-lg p-2 text-center border border-white/5">
+          <span className="text-xs text-slate-400">Sign in to see your rank</span>
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -2462,13 +2563,42 @@ const BottomNav = ({ activeTab, onTabChange, portfolioCount, isPremium }) => {
 // ACCOUNT TAB COMPONENT
 // ============================================================================
 
-const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChange }) => {
+// Investment Style Options
+const INVESTMENT_STYLES = [
+  { id: 'diamond', emoji: '💎', label: 'Diamond Hands', desc: 'HODL forever, never sell' },
+  { id: 'degen', emoji: '🦍', label: 'Degen Ape', desc: 'High risk, high reward' },
+  { id: 'swing', emoji: '📊', label: 'Swing Trader', desc: 'Ride the waves' },
+  { id: 'value', emoji: '🎯', label: 'Value Hunter', desc: 'Undervalued gems only' },
+  { id: 'whale', emoji: '🐋', label: 'Whale Watcher', desc: 'Follow the big money' },
+  { id: 'meme', emoji: '🚀', label: 'Meme Lord', desc: 'DOGE, PEPE, BONK life' },
+];
+
+const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChange, userProfile, onProfileUpdate }) => {
   const [showSignUp, setShowSignUp] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedStyle, setSelectedStyle] = useState(userProfile?.investmentStyle || null);
+  const [bio, setBio] = useState(userProfile?.bio || '');
+  const [editingBio, setEditingBio] = useState(false);
+
+  // Update investment style
+  const handleStyleSelect = async (styleId) => {
+    setSelectedStyle(styleId);
+    if (user && onProfileUpdate) {
+      await onProfileUpdate({ investmentStyle: styleId });
+    }
+  };
+
+  // Save bio
+  const handleSaveBio = async () => {
+    if (user && onProfileUpdate) {
+      await onProfileUpdate({ bio });
+      setEditingBio(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -2614,6 +2744,91 @@ const AccountTab = ({ isPremium, onUpgrade, swipesToday, stats, user, onUserChan
           </div>
         </div>
       </div>
+
+      {/* Investment Style */}
+      {user && (
+        <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-white/5">
+          <h3 className="font-bold mb-3 flex items-center gap-2">
+            Investment Style
+            {selectedStyle && (
+              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                {INVESTMENT_STYLES.find(s => s.id === selectedStyle)?.emoji}
+              </span>
+            )}
+          </h3>
+          <p className="text-slate-400 text-xs mb-3">Choose your trading personality</p>
+          <div className="grid grid-cols-2 gap-2">
+            {INVESTMENT_STYLES.map(style => (
+              <motion.button
+                key={style.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleStyleSelect(style.id)}
+                className={`p-3 rounded-xl text-left transition-all ${
+                  selectedStyle === style.id
+                    ? 'bg-blue-500/20 border-2 border-blue-500'
+                    : 'bg-slate-700/50 border-2 border-transparent hover:border-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{style.emoji}</span>
+                  <span className="font-bold text-sm">{style.label}</span>
+                </div>
+                <p className="text-slate-400 text-[10px]">{style.desc}</p>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bio Section */}
+      {user && (
+        <div className="bg-slate-800/50 rounded-2xl p-4 mb-4 border border-white/5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold">Bio</h3>
+            {!editingBio && (
+              <button
+                onClick={() => setEditingBio(true)}
+                className="text-blue-400 text-xs hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+          {editingBio ? (
+            <div className="space-y-2">
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value.slice(0, 160))}
+                placeholder="Tell others about your investment journey..."
+                className="w-full h-20 bg-slate-700/50 rounded-xl p-3 text-sm border border-white/10 focus:outline-none focus:border-blue-500 resize-none"
+                maxLength={160}
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 text-xs">{bio.length}/160</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setEditingBio(false); setBio(userProfile?.bio || ''); }}
+                    className="px-3 py-1 text-slate-400 text-sm hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveBio}
+                    className="px-4 py-1 bg-blue-500 rounded-lg text-sm font-medium"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-slate-300 text-sm">
+              {bio || <span className="text-slate-500 italic">No bio yet. Tell others about yourself!</span>}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Settings */}
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
@@ -2939,7 +3154,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
           <DailyPrediction coins={coins} onVote={onPredictionVote} userVote={predictionVote} />
         </div>
         <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
-          <Leaderboard portfolio={portfolio} />
+          <Leaderboard portfolio={portfolio} user={user} leaderboardData={leaderboardData} userRankData={userRankData} />
         </div>
       </div>
     );
@@ -3293,7 +3508,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
 
       {/* Leaderboard */}
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
-        <Leaderboard portfolio={portfolio} />
+        <Leaderboard portfolio={portfolio} user={user} leaderboardData={leaderboardData} userRankData={userRankData} />
       </div>
     </div>
   );
@@ -3338,6 +3553,10 @@ export default function Swipefolio() {
   const [predictionVote, setPredictionVote] = useState(null); // 'ape' or 'rug'
   const [showCommunity, setShowCommunity] = useState(false); // Mobile collapsible
   const [user, setUser] = useState(null); // Firebase auth user
+  const [coinStats, setCoinStats] = useState({}); // Real community swipe stats from Firestore
+  const [leaderboardData, setLeaderboardData] = useState([]); // Real leaderboard from Firestore
+  const [userRankData, setUserRankData] = useState(null); // User's rank data
+  const [userProfile, setUserProfile] = useState(null); // User's profile data (bio, investment style)
 
   // Listen for auth state changes
   useEffect(() => {
@@ -3352,10 +3571,53 @@ export default function Swipefolio() {
           photoURL: currentUser.photoURL,
           createdAt: currentUser.metadata?.creationTime
         });
+
+        // Load portfolio and stats from cloud
+        const [portfolioResult, statsResult] = await Promise.all([
+          loadPortfolioFromCloud(currentUser.uid),
+          loadStatsFromCloud(currentUser.uid)
+        ]);
+
+        // Merge cloud portfolio with local (cloud takes priority, but keep unique local items)
+        if (portfolioResult.data && portfolioResult.data.length > 0) {
+          const localPortfolio = JSON.parse(localStorage.getItem('swipefolio_portfolio') || '[]');
+          const cloudIds = new Set(portfolioResult.data.map(p => p.id));
+          const uniqueLocal = localPortfolio.filter(p => !cloudIds.has(p.id));
+          const merged = [...portfolioResult.data, ...uniqueLocal];
+          setPortfolio(merged);
+          localStorage.setItem('swipefolio_portfolio', JSON.stringify(merged));
+          console.log('📦 Portfolio synced from cloud:', merged.length, 'positions');
+        }
+
+        // Load stats from cloud (use cloud if available, otherwise keep local)
+        if (statsResult.data) {
+          setStats(statsResult.data);
+          localStorage.setItem('swipefolio_stats', JSON.stringify(statsResult.data));
+          console.log('📊 Stats synced from cloud');
+        }
+
+        // Load user profile (bio, investment style)
+        const { data: profileData } = await getUserProfile(currentUser.uid);
+        if (profileData) {
+          setUserProfile(profileData);
+          console.log('👤 Profile loaded:', profileData.investmentStyle || 'no style set');
+        }
+      } else {
+        setUserProfile(null);
       }
     });
     return () => unsubscribe();
   }, []);
+
+  // Handle profile update
+  const handleProfileUpdate = async (updates) => {
+    if (!user) return;
+    const { error } = await saveUserProfile(user.uid, updates);
+    if (!error) {
+      setUserProfile(prev => ({ ...prev, ...updates }));
+      console.log('👤 Profile updated');
+    }
+  };
 
   // Get current categories based on asset type
   const currentCategories = assetType === 'crypto' ? CRYPTO_CATEGORIES : STOCK_CATEGORIES;
@@ -3398,14 +3660,38 @@ export default function Swipefolio() {
     }
   }, []);
 
-  // Save to localStorage
+  // Save to localStorage and cloud (debounced)
+  const cloudSyncTimeoutRef = useRef(null);
+
   useEffect(() => {
     localStorage.setItem('swipefolio_portfolio', JSON.stringify(portfolio));
-  }, [portfolio]);
+
+    // Sync to cloud if user is logged in (debounced to avoid too many writes)
+    if (user && portfolio.length > 0) {
+      if (cloudSyncTimeoutRef.current) {
+        clearTimeout(cloudSyncTimeoutRef.current);
+      }
+      cloudSyncTimeoutRef.current = setTimeout(() => {
+        savePortfolioToCloud(user.uid, portfolio);
+        console.log('☁️ Portfolio synced to cloud');
+      }, 2000); // Wait 2 seconds before syncing to avoid rapid writes
+    }
+  }, [portfolio, user]);
 
   useEffect(() => {
     localStorage.setItem('swipefolio_stats', JSON.stringify(stats));
-  }, [stats]);
+
+    // Sync stats to cloud if user is logged in (debounced)
+    if (user) {
+      if (cloudSyncTimeoutRef.current) {
+        clearTimeout(cloudSyncTimeoutRef.current);
+      }
+      cloudSyncTimeoutRef.current = setTimeout(() => {
+        saveStatsToCloud(user.uid, stats);
+        console.log('☁️ Stats synced to cloud');
+      }, 2000);
+    }
+  }, [stats, user]);
 
   // Data source tracking
   const [dataSource, setDataSource] = useState('loading'); // 'live', 'cached', 'mock'
@@ -3638,6 +3924,58 @@ export default function Swipefolio() {
     fetchFearGreed();
   }, []);
 
+  // Fetch community coin stats (real APE/RUG ratios) when coins load
+  useEffect(() => {
+    if (coins.length === 0) return;
+
+    const fetchCoinStats = async () => {
+      // Get stats for visible coins (current + next few in stack)
+      const visibleCoins = coins.slice(currentIndex, currentIndex + 5);
+      const coinIds = visibleCoins.map(c => c.id);
+
+      if (coinIds.length === 0) return;
+
+      const { data, error } = await getCoinStatsBatch(coinIds);
+      if (!error && data) {
+        setCoinStats(prev => ({ ...prev, ...data }));
+      }
+    };
+
+    fetchCoinStats();
+  }, [coins, currentIndex]);
+
+  // Fetch leaderboard data
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      const { data, error } = await getLeaderboard(10);
+      if (!error && data) {
+        setLeaderboardData(data);
+      }
+    };
+
+    fetchLeaderboardData();
+    // Refresh leaderboard every 60 seconds
+    const interval = setInterval(fetchLeaderboardData, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch user rank when user changes
+  useEffect(() => {
+    if (!user) {
+      setUserRankData(null);
+      return;
+    }
+
+    const fetchUserRankData = async () => {
+      const { rank, totalSwipes, error } = await getUserRank(user.uid);
+      if (!error) {
+        setUserRankData({ rank, totalSwipes });
+      }
+    };
+
+    fetchUserRankData();
+  }, [user, stats]); // Refetch when stats change (user swipes)
+
   // Fetch stocks from Finnhub when switching to stocks mode
   useEffect(() => {
     if (assetType !== 'stocks') return;
@@ -3862,7 +4200,26 @@ export default function Swipefolio() {
 
     // Save swipe to Firestore for community features (if user is logged in)
     if (user) {
-      saveSwipe(user.uid, coin.id, coin, direction === 'right' ? 'ape' : 'rug');
+      const swipeDirection = direction === 'right' ? 'ape' : 'rug';
+      saveSwipe(user.uid, coin.id, coin, swipeDirection);
+
+      // Update local coinStats immediately for responsive UI
+      setCoinStats(prev => {
+        const existing = prev[coin.id] || { apeCount: 0, rugCount: 0, totalSwipes: 0 };
+        const newApeCount = existing.apeCount + (swipeDirection === 'ape' ? 1 : 0);
+        const newRugCount = existing.rugCount + (swipeDirection === 'rug' ? 1 : 0);
+        const newTotal = newApeCount + newRugCount;
+        return {
+          ...prev,
+          [coin.id]: {
+            ...existing,
+            apeCount: newApeCount,
+            rugCount: newRugCount,
+            totalSwipes: newTotal,
+            apeRatio: newTotal > 0 ? Math.round((newApeCount / newTotal) * 100) : null
+          }
+        };
+      });
     }
 
     setCurrentIndex(prev => prev + 1);
@@ -4193,6 +4550,7 @@ export default function Swipefolio() {
                     onSwipe={handleSwipe}
                     onTap={(coin) => setDetailModal(coin)}
                     zIndex={3 - i}
+                    coinStats={coinStats[coin.id]}
                     style={{
                       scale: 1 - i * 0.05,
                       y: i * 8,
@@ -4213,7 +4571,7 @@ export default function Swipefolio() {
               onVote={handlePredictionVote}
               userVote={predictionVote}
             />
-            <Leaderboard portfolio={portfolio} />
+            <Leaderboard portfolio={portfolio} user={user} leaderboardData={leaderboardData} userRankData={userRankData} />
           </div>
         )}
       </div>
@@ -4343,6 +4701,8 @@ export default function Swipefolio() {
           stats={stats}
           user={user}
           onUserChange={setUser}
+          userProfile={userProfile}
+          onProfileUpdate={handleProfileUpdate}
         />
       )}
 
