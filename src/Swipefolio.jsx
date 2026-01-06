@@ -35,7 +35,20 @@ import {
   saveNotificationToken,
   onForegroundMessage,
   getNotificationSettings,
-  updateNotificationSettings
+  updateNotificationSettings,
+  followUser,
+  unfollowUser,
+  isFollowing,
+  getFollowing,
+  getFollowers,
+  getActivityFeed,
+  getWeeklyChallenges,
+  joinChallenge,
+  hasJoinedChallenge,
+  getChallengeLeaderboard,
+  getUserChallengeStats,
+  getUserBadges,
+  CHALLENGE_TYPES
 } from './firebase';
 
 // ============================================================================
@@ -773,8 +786,9 @@ const FINNHUB_KEY = () => localStorage.getItem('finnhub_key') || 'demo'; // 'dem
 
 // Get stock category from our stock list metadata
 const getStockCategory = (stock) => {
-  const stockMeta = STOCK_LIST.find(s => s.symbol === stock.symbol);
-  const categories = stockMeta?.category || [];
+  const stockSymbol = stock.symbol?.toUpperCase();
+  const stockMeta = STOCK_LIST.find(s => s.symbol === stockSymbol);
+  const categories = [...(stockMeta?.category || [])];
 
   // Add trending if big move
   if (Math.abs(stock.price_change_percentage_24h || 0) > 5) {
@@ -788,7 +802,8 @@ const getStockCategory = (stock) => {
 const getStockVibes = (stock) => {
   const vibes = [];
   const categories = getStockCategory(stock);
-  const stockMeta = STOCK_LIST.find(s => s.symbol === stock.symbol);
+  const stockSymbol = stock.symbol?.toUpperCase();
+  const stockMeta = STOCK_LIST.find(s => s.symbol === stockSymbol);
 
   if (categories.includes('trending')) vibes.push({ text: 'Trending', emoji: '🔥', color: 'from-orange-500 to-red-500' });
   if (categories.includes('ai')) vibes.push({ text: 'AI', emoji: '🤖', color: 'from-blue-500 to-cyan-500' });
@@ -1920,6 +1935,47 @@ const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
   const risk = getRiskLevel(coin.market_cap);
   const vibes = getVibes(coin);
   const isPositive = coin.price_change_percentage_24h >= 0;
+  const [shareStatus, setShareStatus] = useState(null); // 'copied' or 'shared'
+
+  // Share card functionality
+  const handleShare = async () => {
+    const shareText = `🦍 I'm watching $${coin.symbol?.toUpperCase()} on Swipefolio!\n\n` +
+      `💰 ${formatPrice(coin.current_price)}\n` +
+      `${isPositive ? '📈' : '📉'} ${isPositive ? '+' : ''}${coin.price_change_percentage_24h?.toFixed(2)}% (24h)\n` +
+      `🏆 Rank #${coin.market_cap_rank}\n\n` +
+      `Swipe to discover crypto & stocks! 🚀`;
+
+    const shareUrl = coin.isStock
+      ? `https://finance.yahoo.com/quote/${coin.symbol?.toUpperCase()}`
+      : `https://www.coingecko.com/en/coins/${coin.id}`;
+
+    // Try native Web Share API first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${coin.name} ($${coin.symbol?.toUpperCase()})`,
+          text: shareText,
+          url: shareUrl
+        });
+        setShareStatus('shared');
+        setTimeout(() => setShareStatus(null), 2000);
+        return;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.log('Share failed, falling back to clipboard');
+        }
+      }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      setShareStatus('copied');
+      setTimeout(() => setShareStatus(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   return (
     <motion.div
@@ -2088,6 +2144,18 @@ const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
             className="flex-1 bg-red-500/20 hover:bg-red-500/30 border-2 border-red-500 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2"
           >
             <span className="text-xl">🚫</span> RUG
+          </button>
+          <button
+            onClick={handleShare}
+            className="bg-blue-500/20 hover:bg-blue-500/30 border-2 border-blue-500 px-4 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2"
+          >
+            {shareStatus === 'copied' ? (
+              <><span className="text-xl">✓</span> Copied!</>
+            ) : shareStatus === 'shared' ? (
+              <><span className="text-xl">✓</span> Shared!</>
+            ) : (
+              <><span className="text-xl">📤</span> Share</>
+            )}
           </button>
           <button
             onClick={() => { onApe(); onClose(); }}
@@ -3531,7 +3599,7 @@ const recordMessageSent = (userId) => {
   lastMessageTimes.set(userId, Date.now());
 };
 
-const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user }) => {
+const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user, leaderboardData, userRankData }) => {
   const [activeSection, setActiveSection] = useState('matches');
   const [investorMatches, setInvestorMatches] = useState([]);
   const [connections, setConnections] = useState([]);
@@ -3546,6 +3614,19 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
   const [chatError, setChatError] = useState(null);
   const [cooldownTime, setCooldownTime] = useState(0);
   const messagesEndRef = useRef(null);
+
+  // Follow System state
+  const [followingList, setFollowingList] = useState([]);
+  const [followersList, setFollowersList] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
+  const [followingStatus, setFollowingStatus] = useState({}); // { [userId]: true/false }
+
+  // Weekly Challenges state
+  const [challenges, setChallenges] = useState([]);
+  const [joinedChallenges, setJoinedChallenges] = useState({});
+  const [challengeLeaderboards, setChallengeLeaderboards] = useState({});
+  const [selectedChallenge, setSelectedChallenge] = useState(null);
+  const [userBadges, setUserBadges] = useState([]);
 
   // Load investor matches
   useEffect(() => {
@@ -3572,6 +3653,79 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
       getTrendingCoins().then(({ data }) => setTrendingCoins(data));
     }
   }, [activeSection]);
+
+  // Load following/followers list
+  useEffect(() => {
+    if (user && activeSection === 'following') {
+      setLoading(true);
+      Promise.all([
+        getFollowing(user.uid),
+        getFollowers(user.uid),
+        getActivityFeed(user.uid)
+      ]).then(([following, followers, feed]) => {
+        setFollowingList(following);
+        setFollowersList(followers);
+        setActivityFeed(feed);
+        setLoading(false);
+      });
+    }
+  }, [user, activeSection]);
+
+  // Check following status for matches
+  useEffect(() => {
+    if (user && investorMatches.length > 0) {
+      const checkStatus = async () => {
+        const statuses = {};
+        for (const match of investorMatches) {
+          statuses[match.id] = await isFollowing(user.uid, match.id);
+        }
+        setFollowingStatus(statuses);
+      };
+      checkStatus();
+    }
+  }, [user, investorMatches]);
+
+  // Load weekly challenges
+  useEffect(() => {
+    if (activeSection === 'challenges') {
+      setLoading(true);
+      getWeeklyChallenges().then(({ data }) => {
+        setChallenges(data || []);
+        setLoading(false);
+      });
+
+      // Load user badges
+      if (user) {
+        getUserBadges(user.uid).then(({ data }) => setUserBadges(data || []));
+      }
+    }
+  }, [activeSection, user]);
+
+  // Check which challenges user has joined
+  useEffect(() => {
+    if (user && challenges.length > 0) {
+      const checkJoined = async () => {
+        const joined = {};
+        for (const challenge of challenges) {
+          joined[challenge.id] = await hasJoinedChallenge(user.uid, challenge.id);
+        }
+        setJoinedChallenges(joined);
+      };
+      checkJoined();
+    }
+  }, [user, challenges]);
+
+  // Load leaderboard for selected challenge
+  useEffect(() => {
+    if (selectedChallenge) {
+      getChallengeLeaderboard(selectedChallenge.id).then(({ data }) => {
+        setChallengeLeaderboards(prev => ({
+          ...prev,
+          [selectedChallenge.id]: data || []
+        }));
+      });
+    }
+  }, [selectedChallenge]);
 
   // Subscribe to chat room
   useEffect(() => {
@@ -3662,6 +3816,39 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
     // Refresh connections and requests
     getUserConnections(user.uid).then(({ data }) => setConnections(data));
     getMatchRequests(user.uid).then(({ data }) => setMatchRequests(data));
+  };
+
+  // Follow/Unfollow handlers
+  const handleFollow = async (targetUserId) => {
+    if (!user) return;
+    await followUser(user.uid, targetUserId);
+    setFollowingStatus(prev => ({ ...prev, [targetUserId]: true }));
+    // Refresh following list if on that tab
+    if (activeSection === 'following') {
+      const following = await getFollowing(user.uid);
+      setFollowingList(following);
+    }
+  };
+
+  const handleUnfollow = async (targetUserId) => {
+    if (!user) return;
+    await unfollowUser(user.uid, targetUserId);
+    setFollowingStatus(prev => ({ ...prev, [targetUserId]: false }));
+    // Refresh following list if on that tab
+    if (activeSection === 'following') {
+      const following = await getFollowing(user.uid);
+      setFollowingList(following);
+    }
+  };
+
+  // Join challenge handler
+  const handleJoinChallenge = async (challengeId) => {
+    if (!user) return;
+    await joinChallenge(user.uid, challengeId);
+    setJoinedChallenges(prev => ({ ...prev, [challengeId]: true }));
+    // Refresh challenges to update participant count
+    const { data } = await getWeeklyChallenges();
+    setChallenges(data || []);
   };
 
   // Not logged in
@@ -3843,6 +4030,8 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {[
           { id: 'matches', label: 'Matches', emoji: '💙' },
+          { id: 'following', label: 'Following', emoji: '👥' },
+          { id: 'challenges', label: 'Challenges', emoji: '🏆' },
           { id: 'chatrooms', label: 'Chat Rooms', emoji: '💬' },
           { id: 'connections', label: 'Connections', emoji: '🤝' },
           { id: 'trending', label: 'Trending', emoji: '🔥' },
@@ -3889,14 +4078,331 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
                   <h4 className="font-medium truncate">{match.displayName}</h4>
                   <p className="text-xs text-blue-400">{match.commonCoins} coins in common</p>
                 </div>
-                <button
-                  onClick={() => handleConnect(match.id)}
-                  className="px-3 py-1.5 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
-                >
-                  Connect
-                </button>
+                <div className="flex gap-2">
+                  {followingStatus[match.id] ? (
+                    <button
+                      onClick={() => handleUnfollow(match.id)}
+                      className="px-3 py-1.5 bg-slate-600 rounded-lg text-sm font-medium hover:bg-slate-500 transition-colors"
+                    >
+                      Following
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleFollow(match.id)}
+                      className="px-3 py-1.5 bg-purple-600 rounded-lg text-sm font-medium hover:bg-purple-500 transition-colors"
+                    >
+                      Follow
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleConnect(match.id)}
+                    className="px-3 py-1.5 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
+                  >
+                    Connect
+                  </button>
+                </div>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {/* Following Section */}
+      {activeSection === 'following' && (
+        <div className="space-y-4">
+          {/* Stats */}
+          <div className="flex gap-4">
+            <div className="flex-1 bg-slate-800/50 rounded-xl p-4 border border-white/5 text-center">
+              <p className="text-2xl font-bold text-purple-400">{followingList.length}</p>
+              <p className="text-xs text-slate-400">Following</p>
+            </div>
+            <div className="flex-1 bg-slate-800/50 rounded-xl p-4 border border-white/5 text-center">
+              <p className="text-2xl font-bold text-cyan-400">{followersList.length}</p>
+              <p className="text-xs text-slate-400">Followers</p>
+            </div>
+          </div>
+
+          {/* Activity Feed */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-400 flex items-center gap-2">
+              <span>📡</span> Activity Feed
+            </h3>
+            {loading ? (
+              <div className="text-center py-8 text-slate-400">Loading activity...</div>
+            ) : activityFeed.length === 0 ? (
+              <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
+                <div className="text-4xl mb-3">📡</div>
+                <p className="text-slate-400">No activity yet</p>
+                <p className="text-xs text-slate-500 mt-2">Follow investors to see their swipes here!</p>
+              </div>
+            ) : (
+              activityFeed.slice(0, 20).map((activity, idx) => (
+                <div key={idx} className="bg-slate-800/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                    {activity.userPhotoURL ? (
+                      <img src={activity.userPhotoURL} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm">
+                        {activity.userDisplayName?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                      <span className="font-medium">{activity.userDisplayName}</span>
+                      <span className="text-slate-400">
+                        {activity.swipeDirection === 'right' ? ' APEd ' : ' RUGged '}
+                      </span>
+                      <span className="font-medium text-blue-400">${activity.coinSymbol?.toUpperCase()}</span>
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {activity.swipedAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
+                    </p>
+                  </div>
+                  <span className="text-2xl">
+                    {activity.swipeDirection === 'right' ? '🦍' : '🚫'}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Following List */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-400">People You Follow</h3>
+            {followingList.length === 0 ? (
+              <div className="bg-slate-800/50 rounded-xl p-4 text-center border border-white/5">
+                <p className="text-slate-500 text-sm">Not following anyone yet</p>
+              </div>
+            ) : (
+              followingList.map((person) => (
+                <div key={person.id} className="bg-slate-800/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                    {person.photoURL ? (
+                      <img src={person.photoURL} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm">
+                        {person.displayName?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">{person.displayName}</h4>
+                  </div>
+                  <button
+                    onClick={() => handleUnfollow(person.id)}
+                    className="px-3 py-1.5 bg-slate-600 rounded-lg text-xs font-medium hover:bg-red-600 transition-colors"
+                  >
+                    Unfollow
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Followers List */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-400">Your Followers</h3>
+            {followersList.length === 0 ? (
+              <div className="bg-slate-800/50 rounded-xl p-4 text-center border border-white/5">
+                <p className="text-slate-500 text-sm">No followers yet</p>
+              </div>
+            ) : (
+              followersList.map((person) => (
+                <div key={person.id} className="bg-slate-800/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                    {person.photoURL ? (
+                      <img src={person.photoURL} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm">
+                        {person.displayName?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">{person.displayName}</h4>
+                  </div>
+                  {!followingStatus[person.id] && (
+                    <button
+                      onClick={() => handleFollow(person.id)}
+                      className="px-3 py-1.5 bg-purple-600 rounded-lg text-xs font-medium hover:bg-purple-500 transition-colors"
+                    >
+                      Follow Back
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Weekly Challenges Section */}
+      {activeSection === 'challenges' && (
+        <div className="space-y-4">
+          {/* Week indicator */}
+          <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl p-4 border border-yellow-500/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <span>🏆</span> Weekly Challenges
+                </h3>
+                <p className="text-sm text-slate-400">Compete with the community!</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-400">Resets in</p>
+                <p className="font-mono text-yellow-400">
+                  {(() => {
+                    const now = new Date();
+                    const dayOfWeek = now.getDay();
+                    const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+                    return `${daysUntilMonday}d`;
+                  })()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* User Badges */}
+          {userBadges.length > 0 && (
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-white/5">
+              <h4 className="text-sm font-medium text-slate-400 mb-3">Your Badges</h4>
+              <div className="flex flex-wrap gap-2">
+                {userBadges.map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="px-3 py-1.5 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full text-sm border border-purple-500/30"
+                    title={badge.description}
+                  >
+                    {badge.emoji} {badge.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Challenge Cards */}
+          {loading ? (
+            <div className="text-center py-8 text-slate-400">Loading challenges...</div>
+          ) : selectedChallenge ? (
+            // Challenge Detail View with Leaderboard
+            <div className="space-y-4">
+              <button
+                onClick={() => setSelectedChallenge(null)}
+                className="flex items-center gap-2 text-slate-400 hover:text-white"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Challenges
+              </button>
+
+              <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl p-6 border border-purple-500/30">
+                <div className="text-center">
+                  <span className="text-5xl">{selectedChallenge.emoji}</span>
+                  <h3 className="font-bold text-xl mt-3">{selectedChallenge.title}</h3>
+                  <p className="text-slate-400 text-sm mt-1">{selectedChallenge.description}</p>
+                  <div className="mt-3 inline-block px-3 py-1 bg-yellow-500/20 rounded-full text-yellow-400 text-sm">
+                    Prize: {selectedChallenge.reward}
+                  </div>
+                </div>
+              </div>
+
+              {/* Leaderboard */}
+              <div className="bg-slate-800/50 rounded-xl p-4 border border-white/5">
+                <h4 className="font-medium mb-4 flex items-center gap-2">
+                  <span>📊</span> Leaderboard
+                </h4>
+                {(challengeLeaderboards[selectedChallenge.id] || []).length === 0 ? (
+                  <p className="text-center text-slate-500 py-4">No participants yet. Be the first!</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(challengeLeaderboards[selectedChallenge.id] || []).map((entry) => (
+                      <div
+                        key={entry.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg ${
+                          entry.rank === 1 ? 'bg-yellow-500/20 border border-yellow-500/30' :
+                          entry.rank === 2 ? 'bg-slate-400/20 border border-slate-400/30' :
+                          entry.rank === 3 ? 'bg-orange-600/20 border border-orange-600/30' :
+                          'bg-slate-700/50'
+                        }`}
+                      >
+                        <span className="text-lg font-bold w-8">
+                          {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : `#${entry.rank}`}
+                        </span>
+                        <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden">
+                          {entry.photoURL ? (
+                            <img src={entry.photoURL} className="w-full h-full object-cover" alt="" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-sm">
+                              {entry.displayName?.[0] || '?'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium truncate">{entry.displayName}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg">{entry.score}</p>
+                          <p className="text-xs text-slate-400">points</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            // Challenge List
+            <div className="space-y-3">
+              {challenges.map((challenge) => (
+                <div
+                  key={challenge.id}
+                  className="bg-slate-800/50 rounded-xl p-4 border border-white/5 hover:border-purple-500/30 transition-colors"
+                >
+                  <div className="flex items-start gap-4">
+                    <span className="text-4xl">{challenge.emoji}</span>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-lg">{challenge.title}</h4>
+                      <p className="text-sm text-slate-400">{challenge.description}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <span className="text-xs text-slate-500">
+                          👥 {challenge.participants || 0} joined
+                        </span>
+                        <span className="text-xs text-yellow-400">
+                          🎁 {challenge.reward}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {joinedChallenges[challenge.id] ? (
+                        <button
+                          onClick={() => setSelectedChallenge(challenge)}
+                          className="px-4 py-2 bg-green-600 rounded-lg text-sm font-medium hover:bg-green-500 transition-colors"
+                        >
+                          View
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleJoinChallenge(challenge.id)}
+                          className="px-4 py-2 bg-purple-600 rounded-lg text-sm font-medium hover:bg-purple-500 transition-colors"
+                        >
+                          Join
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {challenges.length === 0 && (
+                <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
+                  <div className="text-4xl mb-3">🏆</div>
+                  <p className="text-slate-400">No active challenges</p>
+                  <p className="text-xs text-slate-500 mt-2">Check back soon!</p>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -5292,6 +5798,8 @@ export default function Swipefolio() {
           predictionVote={predictionVote}
           onPredictionVote={handlePredictionVote}
           user={user}
+          leaderboardData={leaderboardData}
+          userRankData={userRankData}
         />
       )}
 

@@ -511,6 +511,173 @@ export const getUserRank = async (userId) => {
 };
 
 // ============================================================================
+// FOLLOW SYSTEM
+// ============================================================================
+
+// --- Follow a User ---
+export const followUser = async (followerId, followingId) => {
+  try {
+    // Add to follower's following list
+    const followingRef = doc(db, 'users', followerId, 'following', followingId);
+    await setDoc(followingRef, {
+      followedAt: serverTimestamp()
+    });
+
+    // Add to followed user's followers list
+    const followerRef = doc(db, 'users', followingId, 'followers', followerId);
+    await setDoc(followerRef, {
+      followedAt: serverTimestamp()
+    });
+
+    // Update follower counts
+    await setDoc(doc(db, 'users', followerId), {
+      followingCount: increment(1)
+    }, { merge: true });
+
+    await setDoc(doc(db, 'users', followingId), {
+      followersCount: increment(1)
+    }, { merge: true });
+
+    return { error: null };
+  } catch (error) {
+    console.error('Follow user error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Unfollow a User ---
+export const unfollowUser = async (followerId, followingId) => {
+  try {
+    // Remove from following list
+    await deleteDoc(doc(db, 'users', followerId, 'following', followingId));
+
+    // Remove from followers list
+    await deleteDoc(doc(db, 'users', followingId, 'followers', followerId));
+
+    // Update counts
+    await setDoc(doc(db, 'users', followerId), {
+      followingCount: increment(-1)
+    }, { merge: true });
+
+    await setDoc(doc(db, 'users', followingId), {
+      followersCount: increment(-1)
+    }, { merge: true });
+
+    return { error: null };
+  } catch (error) {
+    console.error('Unfollow user error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Check if Following ---
+export const isFollowing = async (followerId, followingId) => {
+  try {
+    const followingRef = doc(db, 'users', followerId, 'following', followingId);
+    const docSnap = await getDoc(followingRef);
+    return { isFollowing: docSnap.exists(), error: null };
+  } catch (error) {
+    return { isFollowing: false, error: error.message };
+  }
+};
+
+// --- Get Following List ---
+export const getFollowing = async (userId) => {
+  try {
+    const followingRef = collection(db, 'users', userId, 'following');
+    const snapshot = await getDocs(followingRef);
+
+    const following = [];
+    for (const followDoc of snapshot.docs) {
+      const userDoc = await getDoc(doc(db, 'users', followDoc.id));
+      if (userDoc.exists()) {
+        following.push({
+          id: followDoc.id,
+          ...userDoc.data(),
+          followedAt: followDoc.data().followedAt
+        });
+      }
+    }
+
+    return { data: following, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Get Followers List ---
+export const getFollowers = async (userId) => {
+  try {
+    const followersRef = collection(db, 'users', userId, 'followers');
+    const snapshot = await getDocs(followersRef);
+
+    const followers = [];
+    for (const followerDoc of snapshot.docs) {
+      const userDoc = await getDoc(doc(db, 'users', followerDoc.id));
+      if (userDoc.exists()) {
+        followers.push({
+          id: followerDoc.id,
+          ...userDoc.data(),
+          followedAt: followerDoc.data().followedAt
+        });
+      }
+    }
+
+    return { data: followers, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Get Activity Feed (swipes from people you follow) ---
+export const getActivityFeed = async (userId, limitCount = 20) => {
+  try {
+    // Get list of users we follow
+    const followingRef = collection(db, 'users', userId, 'following');
+    const followingSnapshot = await getDocs(followingRef);
+    const followingIds = followingSnapshot.docs.map(d => d.id);
+
+    if (followingIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    // Get recent swipes from followed users (limit to first 10 users for performance)
+    const activities = [];
+    for (const followedId of followingIds.slice(0, 10)) {
+      const swipesRef = collection(db, 'users', followedId, 'swipes');
+      const q = query(swipesRef, orderBy('swipedAt', 'desc'), limit(5));
+      const swipesSnapshot = await getDocs(q);
+
+      // Get user info
+      const userDoc = await getDoc(doc(db, 'users', followedId));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+
+      for (const swipeDoc of swipesSnapshot.docs) {
+        activities.push({
+          id: swipeDoc.id,
+          ...swipeDoc.data(),
+          userId: followedId,
+          userDisplayName: userData.displayName || 'Anonymous',
+          userPhotoURL: userData.photoURL
+        });
+      }
+    }
+
+    // Sort by swipedAt and limit
+    activities.sort((a, b) => {
+      const timeA = a.swipedAt?.seconds || 0;
+      const timeB = b.swipedAt?.seconds || 0;
+      return timeB - timeA;
+    });
+
+    return { data: activities.slice(0, limitCount), error: null };
+  } catch (error) {
+    console.error('Get activity feed error:', error);
+    return { data: [], error: error.message };
+  }
+};
+
+// ============================================================================
 // PORTFOLIO CLOUD SYNC
 // ============================================================================
 
@@ -851,6 +1018,211 @@ export const updateNotificationSettings = async (userId, settings) => {
       ...settings,
       updatedAt: serverTimestamp()
     }, { merge: true });
+    return { error: null };
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+// ============================================================================
+// WEEKLY CHALLENGES
+// ============================================================================
+
+// Get current week key (Monday-based)
+const getWeekKey = () => {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  return monday.toISOString().split('T')[0];
+};
+
+// Challenge types
+export const CHALLENGE_TYPES = {
+  MOST_APES: {
+    id: 'most_apes',
+    title: 'APE King',
+    description: 'Get the most APEs this week',
+    emoji: '🦍',
+    metric: 'apeCount',
+    reward: '👑 Crown Badge'
+  },
+  BEST_PREDICTOR: {
+    id: 'best_predictor',
+    title: 'Oracle',
+    description: 'Most accurate price predictions',
+    emoji: '🔮',
+    metric: 'predictionAccuracy',
+    reward: '🔮 Oracle Badge'
+  },
+  STREAK_MASTER: {
+    id: 'streak_master',
+    title: 'Streak Master',
+    description: 'Maintain the longest daily streak',
+    emoji: '🔥',
+    metric: 'streakDays',
+    reward: '🔥 Streak Badge'
+  },
+  SOCIAL_BUTTERFLY: {
+    id: 'social_butterfly',
+    title: 'Social Butterfly',
+    description: 'Most new followers this week',
+    emoji: '🦋',
+    metric: 'newFollowers',
+    reward: '🦋 Social Badge'
+  }
+};
+
+// Get weekly challenges (returns active challenges for current week)
+export const getWeeklyChallenges = async () => {
+  try {
+    const weekKey = getWeekKey();
+    const challengesRef = collection(db, 'weeklyChallenges');
+    const q = query(challengesRef, where('weekKey', '==', weekKey));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      // Create default challenges for this week
+      const challenges = Object.values(CHALLENGE_TYPES).map(type => ({
+        ...type,
+        weekKey,
+        startDate: weekKey,
+        endDate: new Date(new Date(weekKey).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        participants: 0,
+        createdAt: new Date().toISOString()
+      }));
+
+      // Save challenges
+      for (const challenge of challenges) {
+        await setDoc(doc(db, 'weeklyChallenges', `${weekKey}_${challenge.id}`), challenge);
+      }
+
+      return { data: challenges, error: null };
+    }
+
+    const challenges = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+    return { data: challenges, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// Join a challenge
+export const joinChallenge = async (userId, challengeId) => {
+  try {
+    const weekKey = getWeekKey();
+    const participantRef = doc(db, 'weeklyChallenges', `${weekKey}_${challengeId}`, 'participants', userId);
+
+    // Get user profile for display
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    const userData = userDoc.exists() ? userDoc.data() : {};
+
+    await setDoc(participantRef, {
+      joinedAt: serverTimestamp(),
+      displayName: userData.displayName || 'Anonymous',
+      photoURL: userData.photoURL || null,
+      score: 0
+    });
+
+    // Increment participant count
+    const challengeRef = doc(db, 'weeklyChallenges', `${weekKey}_${challengeId}`);
+    await updateDoc(challengeRef, {
+      participants: increment(1)
+    });
+
+    return { error: null };
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+// Check if user joined a challenge
+export const hasJoinedChallenge = async (userId, challengeId) => {
+  try {
+    const weekKey = getWeekKey();
+    const participantRef = doc(db, 'weeklyChallenges', `${weekKey}_${challengeId}`, 'participants', userId);
+    const snapshot = await getDoc(participantRef);
+    return snapshot.exists();
+  } catch (error) {
+    return false;
+  }
+};
+
+// Update challenge score
+export const updateChallengeScore = async (userId, challengeId, score) => {
+  try {
+    const weekKey = getWeekKey();
+    const participantRef = doc(db, 'weeklyChallenges', `${weekKey}_${challengeId}`, 'participants', userId);
+    await updateDoc(participantRef, {
+      score,
+      updatedAt: serverTimestamp()
+    });
+    return { error: null };
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+// Get challenge leaderboard
+export const getChallengeLeaderboard = async (challengeId, limitCount = 10) => {
+  try {
+    const weekKey = getWeekKey();
+    const participantsRef = collection(db, 'weeklyChallenges', `${weekKey}_${challengeId}`, 'participants');
+    const q = query(participantsRef, orderBy('score', 'desc'), limit(limitCount));
+    const snapshot = await getDocs(q);
+
+    const leaderboard = snapshot.docs.map((doc, index) => ({
+      id: doc.id,
+      rank: index + 1,
+      ...doc.data()
+    }));
+
+    return { data: leaderboard, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// Get user's challenge stats
+export const getUserChallengeStats = async (userId) => {
+  try {
+    const weekKey = getWeekKey();
+    const stats = {};
+
+    for (const type of Object.values(CHALLENGE_TYPES)) {
+      const participantRef = doc(db, 'weeklyChallenges', `${weekKey}_${type.id}`, 'participants', userId);
+      const snapshot = await getDoc(participantRef);
+      if (snapshot.exists()) {
+        stats[type.id] = snapshot.data();
+      }
+    }
+
+    return { data: stats, error: null };
+  } catch (error) {
+    return { data: {}, error: error.message };
+  }
+};
+
+// Get user's badges/achievements
+export const getUserBadges = async (userId) => {
+  try {
+    const badgesRef = collection(db, 'users', userId, 'badges');
+    const snapshot = await getDocs(badgesRef);
+    const badges = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return { data: badges, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// Award badge to user
+export const awardBadge = async (userId, badge) => {
+  try {
+    const badgeRef = doc(db, 'users', userId, 'badges', badge.id);
+    await setDoc(badgeRef, {
+      ...badge,
+      awardedAt: serverTimestamp()
+    });
     return { error: null };
   } catch (error) {
     return { error: error.message };
