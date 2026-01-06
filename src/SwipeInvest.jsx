@@ -7,65 +7,68 @@ import { createChart } from 'lightweight-charts';
 // Swipe crypto AND stocks. TradingView charts, keyboard shortcuts & more!
 // ============================================================================
 
-// TradingView symbol mapping (CoinGecko ID -> TradingView symbol)
+// TradingView symbol mapping (CoinGecko ID -> TradingView full symbol with exchange)
+// Using USDT pairs on Binance as they have the best liquidity
 const TRADINGVIEW_SYMBOLS = {
-  'bitcoin': 'BTCUSD',
-  'ethereum': 'ETHUSD',
-  'solana': 'SOLUSD',
-  'cardano': 'ADAUSD',
-  'dogecoin': 'DOGEUSD',
-  'ripple': 'XRPUSD',
-  'polkadot': 'DOTUSD',
-  'avalanche-2': 'AVAXUSD',
-  'chainlink': 'LINKUSD',
-  'polygon': 'MATICUSD',
-  'uniswap': 'UNIUSD',
-  'litecoin': 'LTCUSD',
-  'cosmos': 'ATOMUSD',
-  'stellar': 'XLMUSD',
-  'monero': 'XMRUSD',
-  'ethereum-classic': 'ETCUSD',
-  'filecoin': 'FILUSD',
-  'hedera': 'HBARUSD',
-  'internet-computer': 'ICPUSD',
-  'vechain': 'VETUSD',
-  'aave': 'AAVEUSD',
-  'the-sandbox': 'SANDUSD',
-  'decentraland': 'MANAUSD',
-  'axie-infinity': 'AXSUSD',
-  'eos': 'EOSUSD',
-  'tezos': 'XTZUSD',
-  'theta-token': 'THETAUSD',
-  'maker': 'MKRUSD',
-  'fantom': 'FTMUSD',
-  'neo': 'NEOUSD',
-  'kucoin-shares': 'KCSUSD',
-  'flow': 'FLOWUSD',
-  'chiliz': 'CHZUSD',
-  'enjincoin': 'ENJUSD',
-  'basic-attention-token': 'BATUSD',
-  'curve-dao-token': 'CRVUSD',
-  'loopring': 'LRCUSD',
-  'compound': 'COMPUSD',
-  'yearn-finance': 'YFIUSD',
-  'sushi': 'SUSHIUSD',
-  '1inch': '1INCHUSD',
-  'render-token': 'RNDRUSD',
-  'injective-protocol': 'INJUSD',
-  'gala': 'GALAUSD',
-  'immutable-x': 'IMXUSD',
-  'apecoin': 'APEUSD',
-  'arbitrum': 'ARBUSD',
-  'optimism': 'OPUSD',
-  'sui': 'SUIUSD',
-  'pepe': 'PEPEUSD',
-  'bonk': 'BONKUSD',
-  'floki': 'FLOKIUSD',
-  'shiba-inu': 'SHIBUSD',
-  'fetch-ai': 'FETUSD',
-  'near': 'NEARUSD',
-  'aptos': 'APTUSD',
-  'sei-network': 'SEIUSD',
+  'bitcoin': 'BINANCE:BTCUSDT',
+  'ethereum': 'BINANCE:ETHUSDT',
+  'solana': 'BINANCE:SOLUSDT',
+  'cardano': 'BINANCE:ADAUSDT',
+  'dogecoin': 'BINANCE:DOGEUSDT',
+  'ripple': 'BINANCE:XRPUSDT',
+  'polkadot': 'BINANCE:DOTUSDT',
+  'avalanche-2': 'BINANCE:AVAXUSDT',
+  'chainlink': 'BINANCE:LINKUSDT',
+  'polygon': 'BINANCE:MATICUSDT',
+  'uniswap': 'BINANCE:UNIUSDT',
+  'litecoin': 'BINANCE:LTCUSDT',
+  'cosmos': 'BINANCE:ATOMUSDT',
+  'stellar': 'BINANCE:XLMUSDT',
+  'monero': 'BINANCE:XMRUSDT',
+  'ethereum-classic': 'BINANCE:ETCUSDT',
+  'filecoin': 'BINANCE:FILUSDT',
+  'hedera': 'BINANCE:HBARUSDT',
+  'internet-computer': 'BINANCE:ICPUSDT',
+  'vechain': 'BINANCE:VETUSDT',
+  'aave': 'BINANCE:AAVEUSDT',
+  'the-sandbox': 'BINANCE:SANDUSDT',
+  'decentraland': 'BINANCE:MANAUSDT',
+  'axie-infinity': 'BINANCE:AXSUSDT',
+  'eos': 'BINANCE:EOSUSDT',
+  'tezos': 'BINANCE:XTZUSDT',
+  'theta-token': 'BINANCE:THETAUSDT',
+  'maker': 'BINANCE:MKRUSDT',
+  'fantom': 'BINANCE:FTMUSDT',
+  'neo': 'BINANCE:NEOUSDT',
+  'flow': 'BINANCE:FLOWUSDT',
+  'chiliz': 'BINANCE:CHZUSDT',
+  'enjincoin': 'BINANCE:ENJUSDT',
+  'basic-attention-token': 'BINANCE:BATUSDT',
+  'curve-dao-token': 'BINANCE:CRVUSDT',
+  'loopring': 'BINANCE:LRCUSDT',
+  'compound': 'BINANCE:COMPUSDT',
+  'yearn-finance': 'BINANCE:YFIUSDT',
+  'sushi': 'BINANCE:SUSHIUSDT',
+  '1inch': 'BINANCE:1INCHUSDT',
+  'render-token': 'BINANCE:RENDERUSDT',
+  'injective-protocol': 'BINANCE:INJUSDT',
+  'gala': 'BINANCE:GALAUSDT',
+  'immutable-x': 'BINANCE:IMXUSDT',
+  'apecoin': 'BINANCE:APEUSDT',
+  'arbitrum': 'BINANCE:ARBUSDT',
+  'optimism': 'BINANCE:OPUSDT',
+  'sui': 'BINANCE:SUIUSDT',
+  'pepe': 'BINANCE:PEPEUSDT',
+  'bonk': 'BINANCE:BONKUSDT',
+  'floki': 'BINANCE:FLOKIUSDT',
+  'shiba-inu': 'BINANCE:SHIBUSDT',
+  'fetch-ai': 'BINANCE:FETUSDT',
+  'near': 'BINANCE:NEARUSDT',
+  'aptos': 'BINANCE:APTUSDT',
+  'sei-network': 'BINANCE:SEIUSDT',
+  'toncoin': 'OKX:TONUSDT',
+  'tron': 'BINANCE:TRXUSDT',
+  'bitcoin-cash': 'BINANCE:BCHUSDT',
 };
 
 // Categories for filtering - CRYPTO
@@ -1153,21 +1156,23 @@ const MatchModal = ({ coin, pnl, onClose }) => {
 // ============================================================================
 
 const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
-  const tvSymbol = TRADINGVIEW_SYMBOLS[coin.id] || `${coin.symbol?.toUpperCase()}USD`;
+  // Get full TradingView symbol (includes exchange) or fallback to Binance USDT pair
+  const tvSymbol = TRADINGVIEW_SYMBOLS[coin.id] || `BINANCE:${coin.symbol?.toUpperCase()}USDT`;
   const risk = getRiskLevel(coin.market_cap);
   const vibes = getVibes(coin);
   const isPositive = coin.price_change_percentage_24h >= 0;
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/90 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/95 backdrop-blur-lg"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="bg-slate-900 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-hidden border border-white/10 shadow-2xl flex flex-col"
+        className="bg-slate-900 rounded-3xl w-full max-w-2xl max-h-[95vh] overflow-hidden border border-white/10 shadow-2xl flex flex-col"
+        style={{ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8), 0 0 0 1px rgba(139,92,246,0.1)' }}
         initial={{ scale: 0.9, y: 50 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 50 }}
@@ -1192,10 +1197,10 @@ const CoinDetailModal = ({ coin, onClose, onApe, onRug }) => {
           </button>
         </div>
 
-        {/* TradingView Chart */}
-        <div className="h-[300px] bg-slate-950">
+        {/* TradingView Chart - Larger */}
+        <div className="h-[400px] sm:h-[450px] bg-slate-950">
           <iframe
-            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=BINANCE:${tvSymbol}&interval=60&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f172a&studies=[]&theme=dark&style=1&timezone=exchange&withdateranges=1&showpopupbutton=0&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&showwatermark=0&locale=en&utm_source=coinswipe&utm_medium=widget&utm_campaign=chart`}
+            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tvSymbol}&interval=60&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f172a&studies=[]&theme=dark&style=1&timezone=exchange&withdateranges=1&showpopupbutton=0&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&showwatermark=0&locale=en&utm_source=swipeinvest&utm_medium=widget&utm_campaign=chart`}
             style={{ width: '100%', height: '100%' }}
             frameBorder="0"
             allowTransparency="true"
@@ -2300,62 +2305,108 @@ export default function SwipeInvest() {
   return (
     <div className="min-h-screen text-white flex flex-col relative overflow-hidden"
       style={{
-        background: 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
+        background: 'linear-gradient(180deg, #0a0f1a 0%, #1a1040 40%, #0f172a 100%)',
       }}
     >
-      {/* Aurora Background */}
+      {/* Subtle Grid Pattern */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+        }}
+      />
+
+      {/* Aurora Background - More Dramatic */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Radial glow spots */}
+        {/* Main aurora glow from top */}
         <div
-          className="absolute top-0 left-1/4 w-[500px] h-[400px] opacity-30"
+          className="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[600px]"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.4) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse 100% 60% at 50% 0%, rgba(139,92,246,0.4) 0%, rgba(168,85,247,0.2) 40%, transparent 70%)',
             filter: 'blur(40px)',
           }}
         />
-        <div
-          className="absolute top-1/3 right-1/4 w-[400px] h-[300px] opacity-25"
+
+        {/* Center card glow */}
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[600px]"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.3) 0%, transparent 70%)',
-            filter: 'blur(50px)',
+            background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.15) 0%, transparent 60%)',
+            filter: 'blur(60px)',
+          }}
+          animate={{ opacity: [0.5, 0.8, 0.5], scale: [0.95, 1.05, 0.95] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+
+        {/* Side glows */}
+        <div
+          className="absolute top-1/4 -left-20 w-[400px] h-[500px] opacity-40"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.4) 0%, transparent 70%)',
+            filter: 'blur(80px)',
           }}
         />
         <div
-          className="absolute bottom-1/4 left-1/3 w-[350px] h-[350px] opacity-20"
+          className="absolute top-1/3 -right-20 w-[400px] h-[500px] opacity-40"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.35) 0%, transparent 70%)',
-            filter: 'blur(60px)',
+            background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.35) 0%, transparent 70%)',
+            filter: 'blur(80px)',
           }}
         />
 
-        {/* Vertical aurora streaks */}
-        {[20, 40, 60, 80].map((left, i) => (
+        {/* Vertical aurora beams - More visible */}
+        {[15, 35, 50, 65, 85].map((left, i) => (
           <motion.div
             key={i}
             className="absolute top-0"
             style={{
               left: `${left}%`,
-              width: '100px',
-              height: '60%',
+              width: i === 2 ? '150px' : '80px',
+              height: '80%',
               background: `linear-gradient(180deg,
-                rgba(139,92,246,0.15) 0%,
-                rgba(168,85,247,0.08) 50%,
+                rgba(139,92,246,${i === 2 ? 0.3 : 0.2}) 0%,
+                rgba(168,85,247,${i === 2 ? 0.15 : 0.1}) 40%,
                 transparent 100%)`,
-              filter: 'blur(25px)',
+              filter: 'blur(20px)',
               transform: 'translateX(-50%)',
             }}
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            animate={{
+              opacity: [0.4, 0.8, 0.4],
+              height: ['75%', '85%', '75%'],
+            }}
             transition={{
-              duration: 4 + i,
+              duration: 3 + i * 0.5,
               repeat: Infinity,
               ease: 'easeInOut',
+              delay: i * 0.2,
             }}
+          />
+        ))}
+
+        {/* Accent beam lines */}
+        {[25, 50, 75].map((left, i) => (
+          <motion.div
+            key={`line-${i}`}
+            className="absolute top-0"
+            style={{
+              left: `${left}%`,
+              width: '2px',
+              height: '60%',
+              background: 'linear-gradient(180deg, rgba(168,85,247,0.6) 0%, rgba(139,92,246,0.2) 50%, transparent 100%)',
+              transform: 'translateX(-50%)',
+            }}
+            animate={{ opacity: [0.2, 0.5, 0.2] }}
+            transition={{ duration: 2 + i, repeat: Infinity, ease: 'easeInOut' }}
           />
         ))}
       </div>
 
-      {/* Floating Sparkles */}
-      <FloatingSparkles count={20} />
+      {/* Floating Sparkles - More of them */}
+      <FloatingSparkles count={35} />
 
       {/* Confetti Explosion on APE! */}
       <Confetti trigger={confettiTrigger} type="ape" />
