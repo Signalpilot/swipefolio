@@ -3090,7 +3090,48 @@ export default function SwipeInvest() {
         ))}
       </div>
 
-      {/* Community Features - Hidden on mobile for clean Tinder-like view */}
+      {/* Community Features - Mobile Only (collapsible) */}
+      {currentAssets.length > 0 && (
+        <div className="lg:hidden px-3 py-1 shrink-0">
+          {/* Toggle Button */}
+          <button
+            onClick={() => setShowCommunity(!showCommunity)}
+            className="w-full flex items-center justify-center gap-3 py-1.5 bg-slate-800/60 rounded-lg border border-white/5"
+          >
+            <span className="text-xs">🎲 Prediction</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-xs">🏆 Leaderboard</span>
+            <motion.span
+              animate={{ rotate: showCommunity ? 180 : 0 }}
+              className="text-slate-400 text-xs"
+            >
+              ▼
+            </motion.span>
+          </button>
+
+          {/* Collapsible Content */}
+          <AnimatePresence>
+            {showCommunity && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <DailyPrediction
+                    coins={currentAssets}
+                    onVote={handlePredictionVote}
+                    userVote={predictionVote}
+                  />
+                  <Leaderboard portfolio={portfolio} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Card Stack Area with Community Sidebar on Desktop */}
       <div className="flex-1 min-h-0 flex items-stretch p-2 sm:p-4 relative overflow-hidden">
