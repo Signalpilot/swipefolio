@@ -20,9 +20,9 @@ const CATEGORIES = [
 
 // Affiliate links
 const AFFILIATE_LINKS = {
-  coinbase: 'https://www.coinbase.com/join/',
-  binance: 'https://www.binance.com/register',
-  bybit: 'https://www.bybit.com/register',
+  coinbase: 'https://advanced.coinbase.com/join/YAHNU27',
+  binance: 'https://www.binance.com/activity/referral-entry/CPA?ref=CPA_003NFBSRRH',
+  bybit: 'https://www.bybit.com/invite?ref=LW6W7',
 };
 
 // ============================================================================
