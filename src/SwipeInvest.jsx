@@ -1827,7 +1827,7 @@ const LandingPage = ({ onStart, stats }) => {
           transition={{ delay: 0.2 }}
           className="text-5xl md:text-7xl font-display font-bold text-center mb-4 tracking-tight"
         >
-          <span className="text-white">Swipe. </span>
+          <span className="text-white">Swipe. Match. </span>
           <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
             Invest.
           </span>
@@ -1839,9 +1839,9 @@ const LandingPage = ({ onStart, stats }) => {
           transition={{ delay: 0.3 }}
           className="text-lg md:text-xl text-slate-400 text-center mb-8 max-w-lg leading-relaxed"
         >
-          Your all-in-one app for discovering crypto and stocks.
+          Discover crypto & stocks. Match with like-minded investors.
           <br className="hidden sm:block" />
-          Swipe right to invest. Build your portfolio effortlessly.
+          Build your portfolio together.
         </motion.p>
 
         {/* Features */}
