@@ -35,7 +35,13 @@ import {
   saveNotificationToken,
   onForegroundMessage,
   getNotificationSettings,
-  updateNotificationSettings
+  updateNotificationSettings,
+  followUser,
+  unfollowUser,
+  isFollowing,
+  getFollowing,
+  getFollowers,
+  getActivityFeed
 } from './firebase';
 
 // ============================================================================
@@ -773,8 +779,9 @@ const FINNHUB_KEY = () => localStorage.getItem('finnhub_key') || 'demo'; // 'dem
 
 // Get stock category from our stock list metadata
 const getStockCategory = (stock) => {
-  const stockMeta = STOCK_LIST.find(s => s.symbol === stock.symbol);
-  const categories = stockMeta?.category || [];
+  const stockSymbol = stock.symbol?.toUpperCase();
+  const stockMeta = STOCK_LIST.find(s => s.symbol === stockSymbol);
+  const categories = [...(stockMeta?.category || [])];
 
   // Add trending if big move
   if (Math.abs(stock.price_change_percentage_24h || 0) > 5) {
@@ -788,7 +795,8 @@ const getStockCategory = (stock) => {
 const getStockVibes = (stock) => {
   const vibes = [];
   const categories = getStockCategory(stock);
-  const stockMeta = STOCK_LIST.find(s => s.symbol === stock.symbol);
+  const stockSymbol = stock.symbol?.toUpperCase();
+  const stockMeta = STOCK_LIST.find(s => s.symbol === stockSymbol);
 
   if (categories.includes('trending')) vibes.push({ text: 'Trending', emoji: '🔥', color: 'from-orange-500 to-red-500' });
   if (categories.includes('ai')) vibes.push({ text: 'AI', emoji: '🤖', color: 'from-blue-500 to-cyan-500' });

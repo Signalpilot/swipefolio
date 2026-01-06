@@ -511,6 +511,173 @@ export const getUserRank = async (userId) => {
 };
 
 // ============================================================================
+// FOLLOW SYSTEM
+// ============================================================================
+
+// --- Follow a User ---
+export const followUser = async (followerId, followingId) => {
+  try {
+    // Add to follower's following list
+    const followingRef = doc(db, 'users', followerId, 'following', followingId);
+    await setDoc(followingRef, {
+      followedAt: serverTimestamp()
+    });
+
+    // Add to followed user's followers list
+    const followerRef = doc(db, 'users', followingId, 'followers', followerId);
+    await setDoc(followerRef, {
+      followedAt: serverTimestamp()
+    });
+
+    // Update follower counts
+    await setDoc(doc(db, 'users', followerId), {
+      followingCount: increment(1)
+    }, { merge: true });
+
+    await setDoc(doc(db, 'users', followingId), {
+      followersCount: increment(1)
+    }, { merge: true });
+
+    return { error: null };
+  } catch (error) {
+    console.error('Follow user error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Unfollow a User ---
+export const unfollowUser = async (followerId, followingId) => {
+  try {
+    // Remove from following list
+    await deleteDoc(doc(db, 'users', followerId, 'following', followingId));
+
+    // Remove from followers list
+    await deleteDoc(doc(db, 'users', followingId, 'followers', followerId));
+
+    // Update counts
+    await setDoc(doc(db, 'users', followerId), {
+      followingCount: increment(-1)
+    }, { merge: true });
+
+    await setDoc(doc(db, 'users', followingId), {
+      followersCount: increment(-1)
+    }, { merge: true });
+
+    return { error: null };
+  } catch (error) {
+    console.error('Unfollow user error:', error);
+    return { error: error.message };
+  }
+};
+
+// --- Check if Following ---
+export const isFollowing = async (followerId, followingId) => {
+  try {
+    const followingRef = doc(db, 'users', followerId, 'following', followingId);
+    const docSnap = await getDoc(followingRef);
+    return { isFollowing: docSnap.exists(), error: null };
+  } catch (error) {
+    return { isFollowing: false, error: error.message };
+  }
+};
+
+// --- Get Following List ---
+export const getFollowing = async (userId) => {
+  try {
+    const followingRef = collection(db, 'users', userId, 'following');
+    const snapshot = await getDocs(followingRef);
+
+    const following = [];
+    for (const followDoc of snapshot.docs) {
+      const userDoc = await getDoc(doc(db, 'users', followDoc.id));
+      if (userDoc.exists()) {
+        following.push({
+          id: followDoc.id,
+          ...userDoc.data(),
+          followedAt: followDoc.data().followedAt
+        });
+      }
+    }
+
+    return { data: following, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Get Followers List ---
+export const getFollowers = async (userId) => {
+  try {
+    const followersRef = collection(db, 'users', userId, 'followers');
+    const snapshot = await getDocs(followersRef);
+
+    const followers = [];
+    for (const followerDoc of snapshot.docs) {
+      const userDoc = await getDoc(doc(db, 'users', followerDoc.id));
+      if (userDoc.exists()) {
+        followers.push({
+          id: followerDoc.id,
+          ...userDoc.data(),
+          followedAt: followerDoc.data().followedAt
+        });
+      }
+    }
+
+    return { data: followers, error: null };
+  } catch (error) {
+    return { data: [], error: error.message };
+  }
+};
+
+// --- Get Activity Feed (swipes from people you follow) ---
+export const getActivityFeed = async (userId, limitCount = 20) => {
+  try {
+    // Get list of users we follow
+    const followingRef = collection(db, 'users', userId, 'following');
+    const followingSnapshot = await getDocs(followingRef);
+    const followingIds = followingSnapshot.docs.map(d => d.id);
+
+    if (followingIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    // Get recent swipes from followed users (limit to first 10 users for performance)
+    const activities = [];
+    for (const followedId of followingIds.slice(0, 10)) {
+      const swipesRef = collection(db, 'users', followedId, 'swipes');
+      const q = query(swipesRef, orderBy('swipedAt', 'desc'), limit(5));
+      const swipesSnapshot = await getDocs(q);
+
+      // Get user info
+      const userDoc = await getDoc(doc(db, 'users', followedId));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+
+      for (const swipeDoc of swipesSnapshot.docs) {
+        activities.push({
+          id: swipeDoc.id,
+          ...swipeDoc.data(),
+          userId: followedId,
+          userDisplayName: userData.displayName || 'Anonymous',
+          userPhotoURL: userData.photoURL
+        });
+      }
+    }
+
+    // Sort by swipedAt and limit
+    activities.sort((a, b) => {
+      const timeA = a.swipedAt?.seconds || 0;
+      const timeB = b.swipedAt?.seconds || 0;
+      return timeB - timeA;
+    });
+
+    return { data: activities.slice(0, limitCount), error: null };
+  } catch (error) {
+    console.error('Get activity feed error:', error);
+    return { data: [], error: error.message };
+  }
+};
+
+// ============================================================================
 // PORTFOLIO CLOUD SYNC
 // ============================================================================
 
