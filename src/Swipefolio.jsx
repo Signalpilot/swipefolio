@@ -448,7 +448,6 @@ const TRADINGVIEW_SYMBOLS = {
   'solv-protocol': 'BINANCE:SOLVUSDT',
   'vine': 'BYBIT:VINEUSDT',
   'paal-ai': 'BYBIT:PAALUSDT',
-  'nosana': 'BYBIT:NOSUSDT',
   'michi': 'BYBIT:MICHIUSDT',
   'chillguy': 'BYBIT:CHILLGUYUSDT',
   'agent-ai': 'BYBIT:AIAGENUSDT',
@@ -1216,6 +1215,25 @@ const playSound = (type) => {
   } catch (e) {
     // Audio not supported
   }
+};
+
+// ============================================================================
+// LOADING SPINNER COMPONENT
+// ============================================================================
+
+const LoadingSpinner = ({ text = 'Loading...', size = 'md' }) => {
+  const sizeClasses = {
+    sm: 'w-5 h-5',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12'
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center py-8 gap-3">
+      <div className={`${sizeClasses[size]} border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin`} />
+      <p className="text-slate-400 text-sm">{text}</p>
+    </div>
+  );
 };
 
 // ============================================================================
@@ -2526,7 +2544,7 @@ const Leaderboard = ({ portfolio, user, leaderboardData, userRankData }) => {
 
       {/* User rank */}
       {user ? (
-        <div className="bg-blue-500/20 rounded-lg p-2 flex items-center gap-3 border border-blue-500/30">
+        <div className="bg-blue-500/20 rounded-xl p-2 flex items-center gap-3 border border-blue-500/30">
           <span className="text-sm font-bold text-blue-400">#{userRank || '?'}</span>
           {user.photoURL ? (
             <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" />
@@ -2540,7 +2558,7 @@ const Leaderboard = ({ portfolio, user, leaderboardData, userRankData }) => {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-700/30 rounded-lg p-2 text-center border border-white/5">
+        <div className="bg-slate-700/30 rounded-xl p-2 text-center border border-white/5">
           <span className="text-xs text-slate-400">Sign in to see your rank</span>
         </div>
       )}
@@ -2810,7 +2828,7 @@ const PortfolioView = ({ portfolio, currentPrices, onBack, onRemove, onShare }) 
 
         {/* How PnL Works - Info Banner */}
         {positions.length > 0 && (
-          <div className="mx-4 mb-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <div className="mx-4 mb-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
             <p className="text-blue-300 text-xs text-center">
               📊 <span className="font-medium">Paper Trading:</span> Swipe right = Entry price saved • PnL updates every 30 sec
             </p>
@@ -3087,7 +3105,7 @@ const AdBanner = ({ slot = 'bottom' }) => {
   // This is a placeholder - replace with actual AdMob component
   // For React: use @react-native-admob/admob or react-native-google-mobile-ads
   return (
-    <div className="bg-slate-800/50 border border-white/5 rounded-lg p-2 text-center">
+    <div className="bg-slate-800/50 border border-white/5 rounded-xl p-2 text-center">
       <p className="text-slate-600 text-xs">
         {/* AdMob Banner - slot: {slot} */}
         <a
@@ -4096,7 +4114,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
         <div className="space-y-3">
           <p className="text-slate-400 text-sm">People who APE the same coins as you</p>
           {loading ? (
-            <div className="text-center py-8 text-slate-400">Loading matches...</div>
+            <LoadingSpinner text="Loading matches..." />
           ) : investorMatches.length === 0 ? (
             <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
               <div className="text-4xl mb-3">🦍</div>
@@ -4169,7 +4187,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
               <span>📡</span> Activity Feed
             </h3>
             {loading ? (
-              <div className="text-center py-8 text-slate-400">Loading activity...</div>
+              <LoadingSpinner text="Loading activity..." />
             ) : activityFeed.length === 0 ? (
               <div className="bg-slate-800/50 rounded-2xl p-6 text-center border border-white/5">
                 <div className="text-4xl mb-3">📡</div>
@@ -4324,7 +4342,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
 
           {/* Challenge Cards */}
           {loading ? (
-            <div className="text-center py-8 text-slate-400">Loading challenges...</div>
+            <LoadingSpinner text="Loading challenges..." />
           ) : selectedChallenge ? (
             // Challenge Detail View with Leaderboard
             <div className="space-y-4">
