@@ -176,7 +176,12 @@ const STABLECOIN_IDS = [
   'frax', 'lusd', 'susd', 'eurs', 'eurt', 'ustc', 'fdusd', 'pyusd', 'usdg',
   'first-digital-usd', 'ethena-usde', 'usde', 'crvusd', 'true-usd', 'pax-dollar',
   'gemini-dollar', 'stasis-euro', 'origin-dollar', 'liquity-usd', 'magic-internet-money',
+  'syrup-usdc', 'syrupusdc', 'wrapped-bitcoin', 'wrapped-ether', 'staked-ether',
+  'tether-gold', 'pax-gold', 'usdd', 'usual-usd', 'paypal-usd', 'tether-eurt',
 ];
+
+// Patterns that indicate stablecoins or wrapped assets
+const STABLECOIN_PATTERNS = ['usd', 'eur', 'gbp', 'jpy', 'syrup', 'wrapped', 'wbtc', 'weth', 'steth'];
 
 const isStablecoin = (coin) => {
   const id = coin.id?.toLowerCase() || '';
@@ -186,9 +191,13 @@ const isStablecoin = (coin) => {
   // Check against known stablecoin IDs
   if (STABLECOIN_IDS.includes(id)) return true;
 
-  // Check for common stablecoin patterns
-  if (symbol.includes('usd') || symbol.includes('eur') || symbol.includes('gbp')) return true;
+  // Check for common stablecoin/wrapped patterns in symbol or name
+  for (const pattern of STABLECOIN_PATTERNS) {
+    if (symbol.includes(pattern) || id.includes(pattern)) return true;
+  }
+
   if (name.includes('usd coin') || name.includes('stablecoin') || name.includes('dollar')) return true;
+  if (name.includes('wrapped') || name.includes('staked')) return true;
 
   // Check if price is pegged around $1 with very low volatility (likely a stablecoin)
   const price = coin.current_price;
