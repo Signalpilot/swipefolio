@@ -20,7 +20,9 @@ import {
   sendDirectMessage,
   subscribeToDirectMessages,
   getTrendingCoins,
-  getCoinStatsBatch
+  getCoinStatsBatch,
+  getLeaderboard,
+  getUserRank
 } from './firebase';
 
 // ============================================================================
@@ -1839,22 +1841,31 @@ const DailyPrediction = ({ coins, onVote, userVote }) => {
 // LEADERBOARD COMPONENT
 // ============================================================================
 
-const Leaderboard = ({ portfolio }) => {
-  // Generate fake leaderboard with user included
+const Leaderboard = ({ portfolio, user, leaderboardData, userRankData }) => {
+  // Fallback fake traders when no real data
   const fakeTraders = [
-    { name: 'DiamondHands', gain: 127, avatar: '💎' },
-    { name: 'DeFiDegen', gain: 89, avatar: '🦄' },
-    { name: 'MoonBoy', gain: 72, avatar: '🌙' },
-    { name: 'CryptoKing', gain: 58, avatar: '👑' },
-    { name: 'ApeStrong', gain: 45, avatar: '🦍' },
-    { name: 'WhaleAlert', gain: 38, avatar: '🐋' },
-    { name: 'SatoshiFan', gain: 29, avatar: '₿' },
-    { name: 'HODLer', gain: 22, avatar: '💪' },
+    { displayName: 'DiamondHands', totalSwipes: 127, apeRate: 78 },
+    { displayName: 'DeFiDegen', totalSwipes: 89, apeRate: 65 },
+    { displayName: 'MoonBoy', totalSwipes: 72, apeRate: 82 },
+    { displayName: 'CryptoKing', totalSwipes: 58, apeRate: 71 },
+    { displayName: 'ApeStrong', totalSwipes: 45, apeRate: 90 },
   ];
 
-  // Calculate user's gain (simplified)
-  const userGain = portfolio.length > 0 ? 12 + (portfolio.length * 3) : 0;
-  const userRank = fakeTraders.filter(t => t.gain > userGain).length + 1;
+  // Use real data or fallback
+  const traders = leaderboardData?.length > 0 ? leaderboardData : fakeTraders;
+  const isRealData = leaderboardData?.length > 0;
+
+  // User rank from real data or estimated
+  const userRank = userRankData?.rank || (portfolio.length > 0 ? Math.floor(Math.random() * 50) + 10 : null);
+  const userSwipes = userRankData?.totalSwipes || portfolio.length;
+
+  // Generate avatar based on ape rate
+  const getAvatar = (apeRate) => {
+    if (apeRate >= 80) return '🦍';
+    if (apeRate >= 60) return '💎';
+    if (apeRate >= 40) return '📊';
+    return '🎯';
+  };
 
   return (
     <motion.div
@@ -1867,31 +1878,67 @@ const Leaderboard = ({ portfolio }) => {
         <div className="flex items-center gap-2">
           <span className="text-xl">🏆</span>
           <span className="font-bold text-sm">Top Swipers</span>
+          {isRealData && (
+            <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-semibold">LIVE</span>
+          )}
         </div>
-        <span className="text-xs text-slate-400">This Week</span>
+        <span className="text-xs text-slate-400">All Time</span>
       </div>
 
       {/* Top 3 */}
       <div className="space-y-2 mb-3">
-        {fakeTraders.slice(0, 3).map((trader, i) => (
-          <div key={trader.name} className="flex items-center gap-3">
+        {traders.slice(0, 3).map((trader, i) => (
+          <div key={trader.id || trader.displayName} className="flex items-center gap-3">
             <span className="text-lg">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-            <span className="text-sm">{trader.avatar}</span>
-            <span className="text-sm font-medium flex-1">@{trader.name}</span>
-            <span className="text-green-400 text-sm font-bold">+{trader.gain}%</span>
+            {trader.photoURL ? (
+              <img src={trader.photoURL} alt="" className="w-5 h-5 rounded-full" />
+            ) : (
+              <span className="text-sm">{getAvatar(trader.apeRate)}</span>
+            )}
+            <span className="text-sm font-medium flex-1 truncate">
+              {trader.displayName?.split(' ')[0] || 'Anonymous'}
+            </span>
+            <div className="text-right">
+              <span className="text-cyan-400 text-sm font-bold">{trader.totalSwipes}</span>
+              <span className="text-slate-500 text-[10px] ml-1">swipes</span>
+            </div>
           </div>
         ))}
       </div>
 
+      {/* More traders */}
+      {traders.length > 3 && (
+        <div className="space-y-1.5 mb-3 pt-2 border-t border-white/5">
+          {traders.slice(3, 5).map((trader, i) => (
+            <div key={trader.id || trader.displayName} className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="w-5 text-center">#{i + 4}</span>
+              <span className="flex-1 truncate">{trader.displayName?.split(' ')[0] || 'Anonymous'}</span>
+              <span className="text-cyan-400/70">{trader.totalSwipes}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* User rank */}
-      <div className="bg-blue-500/20 rounded-lg p-2 flex items-center gap-3 border border-blue-500/30">
-        <span className="text-sm font-bold text-blue-400">#{userRank}</span>
-        <span className="text-sm">😎</span>
-        <span className="text-sm font-medium flex-1">You</span>
-        <span className={`text-sm font-bold ${userGain > 0 ? 'text-green-400' : 'text-slate-400'}`}>
-          {userGain > 0 ? `+${userGain}%` : 'Start swiping!'}
-        </span>
-      </div>
+      {user ? (
+        <div className="bg-blue-500/20 rounded-lg p-2 flex items-center gap-3 border border-blue-500/30">
+          <span className="text-sm font-bold text-blue-400">#{userRank || '?'}</span>
+          {user.photoURL ? (
+            <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" />
+          ) : (
+            <span className="text-sm">😎</span>
+          )}
+          <span className="text-sm font-medium flex-1">You</span>
+          <div className="text-right">
+            <span className="text-cyan-400 text-sm font-bold">{userSwipes}</span>
+            <span className="text-slate-500 text-[10px] ml-1">swipes</span>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-700/30 rounded-lg p-2 text-center border border-white/5">
+          <span className="text-xs text-slate-400">Sign in to see your rank</span>
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -2988,7 +3035,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
           <DailyPrediction coins={coins} onVote={onPredictionVote} userVote={predictionVote} />
         </div>
         <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
-          <Leaderboard portfolio={portfolio} />
+          <Leaderboard portfolio={portfolio} user={user} leaderboardData={leaderboardData} userRankData={userRankData} />
         </div>
       </div>
     );
@@ -3342,7 +3389,7 @@ const CommunityTab = ({ coins, portfolio, predictionVote, onPredictionVote, user
 
       {/* Leaderboard */}
       <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
-        <Leaderboard portfolio={portfolio} />
+        <Leaderboard portfolio={portfolio} user={user} leaderboardData={leaderboardData} userRankData={userRankData} />
       </div>
     </div>
   );
@@ -3388,6 +3435,8 @@ export default function Swipefolio() {
   const [showCommunity, setShowCommunity] = useState(false); // Mobile collapsible
   const [user, setUser] = useState(null); // Firebase auth user
   const [coinStats, setCoinStats] = useState({}); // Real community swipe stats from Firestore
+  const [leaderboardData, setLeaderboardData] = useState([]); // Real leaderboard from Firestore
+  const [userRankData, setUserRankData] = useState(null); // User's rank data
 
   // Listen for auth state changes
   useEffect(() => {
@@ -3707,6 +3756,38 @@ export default function Swipefolio() {
 
     fetchCoinStats();
   }, [coins, currentIndex]);
+
+  // Fetch leaderboard data
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      const { data, error } = await getLeaderboard(10);
+      if (!error && data) {
+        setLeaderboardData(data);
+      }
+    };
+
+    fetchLeaderboardData();
+    // Refresh leaderboard every 60 seconds
+    const interval = setInterval(fetchLeaderboardData, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch user rank when user changes
+  useEffect(() => {
+    if (!user) {
+      setUserRankData(null);
+      return;
+    }
+
+    const fetchUserRankData = async () => {
+      const { rank, totalSwipes, error } = await getUserRank(user.uid);
+      if (!error) {
+        setUserRankData({ rank, totalSwipes });
+      }
+    };
+
+    fetchUserRankData();
+  }, [user, stats]); // Refetch when stats change (user swipes)
 
   // Fetch stocks from Finnhub when switching to stocks mode
   useEffect(() => {
@@ -4303,7 +4384,7 @@ export default function Swipefolio() {
               onVote={handlePredictionVote}
               userVote={predictionVote}
             />
-            <Leaderboard portfolio={portfolio} />
+            <Leaderboard portfolio={portfolio} user={user} leaderboardData={leaderboardData} userRankData={userRankData} />
           </div>
         )}
       </div>
