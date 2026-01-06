@@ -155,7 +155,7 @@ const formatPnL = (pnl) => {
 };
 
 // ============================================================================
-// SOUND EFFECTS (Web Audio API)
+// SOUND EFFECTS (Web Audio API) - Subtle, pleasant sounds
 // ============================================================================
 
 const playSound = (type) => {
@@ -163,45 +163,52 @@ const playSound = (type) => {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
+    const filter = audioContext.createBiquadFilter();
 
-    oscillator.connect(gainNode);
+    // Soft filter to remove harshness
+    filter.type = 'lowpass';
+    filter.frequency.value = 2000;
+
+    oscillator.connect(filter);
+    filter.connect(gainNode);
     gainNode.connect(audioContext.destination);
+    oscillator.type = 'sine';
+
+    const now = audioContext.currentTime;
 
     if (type === 'ape') {
-      // Bullish sound - ascending
-      oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.15);
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-      oscillator.type = 'sine';
+      // Soft pop - quick pleasant chirp
+      oscillator.frequency.setValueAtTime(600, now);
+      oscillator.frequency.exponentialRampToValueAtTime(900, now + 0.06);
+      gainNode.gain.setValueAtTime(0.12, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      oscillator.stop(now + 0.1);
     } else if (type === 'rug') {
-      // Bearish sound - descending
-      oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.15);
-      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-      oscillator.type = 'sawtooth';
+      // Soft thud - gentle low tone
+      oscillator.frequency.setValueAtTime(250, now);
+      oscillator.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+      gainNode.gain.setValueAtTime(0.1, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      oscillator.stop(now + 0.1);
     } else if (type === 'superape') {
-      // Super bullish - arpeggio
-      oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.08);
-      oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.16);
-      gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      oscillator.type = 'sine';
+      // Pleasant ding - like a notification
+      oscillator.frequency.setValueAtTime(880, now);
+      gainNode.gain.setValueAtTime(0.15, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      oscillator.stop(now + 0.15);
     } else if (type === 'match') {
-      // Match celebration
-      oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1);
-      oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2);
-      oscillator.frequency.setValueAtTime(1047, audioContext.currentTime + 0.3);
-      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      oscillator.type = 'sine';
+      // Celebratory chime - two quick notes
+      oscillator.frequency.setValueAtTime(784, now); // G5
+      oscillator.frequency.setValueAtTime(1047, now + 0.1); // C6
+      gainNode.gain.setValueAtTime(0.15, now);
+      gainNode.gain.setValueAtTime(0.15, now + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      oscillator.stop(now + 0.25);
+    } else {
+      oscillator.stop(now + 0.15);
     }
 
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
+    oscillator.start(now);
   } catch (e) {
     // Audio not supported
   }
