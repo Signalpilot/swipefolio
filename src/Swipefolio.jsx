@@ -4863,101 +4863,111 @@ export default function Swipefolio() {
       setLoading(true);
       setDataSource('loading');
 
-      // Try CoinGecko first (most reliable), then CoinCap, then mock
-      const apis = [
-        {
-          name: 'CoinGecko',
-          url: 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&sparkline=true&price_change_percentage=24h',
-          transform: (data) => data.map(coin => ({
-            id: coin.id,
-            symbol: coin.symbol?.toLowerCase() || '',
-            name: coin.name,
-            image: coin.image,
-            current_price: coin.current_price || 0,
-            market_cap: coin.market_cap || 0,
-            market_cap_rank: coin.market_cap_rank || 0,
-            total_volume: coin.total_volume || 0,
-            price_change_percentage_24h: coin.price_change_percentage_24h || 0,
-            high_24h: coin.high_24h || coin.current_price,
-            low_24h: coin.low_24h || coin.current_price,
-            sparkline_in_7d: coin.sparkline_in_7d || { price: [] },
-          }))
-        },
-        {
-          name: 'CoinCap',
-          url: 'https://api.coincap.io/v2/assets?limit=250',
-          transform: (json) => {
-            const data = json.data || json;
-            return data.map((coin, index) => {
-              const price = parseFloat(coin.priceUsd) || 0;
-              const change = parseFloat(coin.changePercent24Hr) || 0;
-              const sparklineData = Array.from({ length: 24 }, (_, i) => {
-                const progress = i / 23;
-                const startPrice = price / (1 + change / 100);
-                return startPrice + (price - startPrice) * progress + (Math.random() - 0.5) * price * 0.02;
-              });
-              return {
-                id: coin.id,
-                symbol: coin.symbol?.toLowerCase() || '',
-                name: coin.name,
-                image: `https://assets.coincap.io/assets/icons/${coin.symbol?.toLowerCase()}@2x.png`,
-                current_price: price,
-                market_cap: parseFloat(coin.marketCapUsd) || 0,
-                market_cap_rank: index + 1,
-                total_volume: parseFloat(coin.volumeUsd24Hr) || 0,
-                price_change_percentage_24h: change,
-                high_24h: price * 1.02,
-                low_24h: price * 0.98,
-                sparkline_in_7d: { price: sparklineData },
-              };
-            });
+      // Try CoinGecko with pagination (2 pages = 500 coins), then CoinCap, then mock
+      const transformCoinGecko = (data) => data.map(coin => ({
+        id: coin.id,
+        symbol: coin.symbol?.toLowerCase() || '',
+        name: coin.name,
+        image: coin.image,
+        current_price: coin.current_price || 0,
+        market_cap: coin.market_cap || 0,
+        market_cap_rank: coin.market_cap_rank || 0,
+        total_volume: coin.total_volume || 0,
+        price_change_percentage_24h: coin.price_change_percentage_24h || 0,
+        high_24h: coin.high_24h || coin.current_price,
+        low_24h: coin.low_24h || coin.current_price,
+        sparkline_in_7d: coin.sparkline_in_7d || { price: [] },
+      }));
+
+      // Try CoinGecko with 2 pages for 500 coins
+      try {
+        console.log('Trying CoinGecko API (2 pages for 500 coins)...');
+        const [page1, page2] = await Promise.all([
+          fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true&price_change_percentage=24h'),
+          fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=2&sparkline=true&price_change_percentage=24h')
+        ]);
+
+        if (page1.ok && page2.ok) {
+          const [data1, data2] = await Promise.all([page1.json(), page2.json()]);
+          const allCoins = [...transformCoinGecko(data1), ...transformCoinGecko(data2)];
+
+          if (allCoins.length > 0) {
+            const filtered = allCoins.filter(coin => !isStablecoin(coin));
+            const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+            setCoins(shuffled);
+
+            const prices = {};
+            allCoins.forEach(coin => { prices[coin.id] = coin.current_price; });
+            setCurrentPrices(prices);
+
+            console.log(`✅ CoinGecko API success! Got ${allCoins.length} coins (${filtered.length} after filtering)`);
+            setDataSource('live');
+            setLoading(false);
+            return;
           }
         }
-      ];
+        throw new Error('CoinGecko pagination failed');
+      } catch (error) {
+        console.warn('❌ CoinGecko failed:', error.message);
+      }
 
-      for (const api of apis) {
-        try {
-          console.log(`Trying ${api.name} API...`);
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
+      // Fallback to CoinCap
+      try {
+        console.log('Trying CoinCap API...');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-          const response = await fetch(api.url, {
-            signal: controller.signal,
-            headers: { 'Accept': 'application/json' }
-          });
-          clearTimeout(timeoutId);
+        const response = await fetch('https://api.coincap.io/v2/assets?limit=500', {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' }
+        });
+        clearTimeout(timeoutId);
 
-          if (!response.ok) {
-            throw new Error(`${api.name} returned ${response.status}`);
-          }
-
+        if (response.ok) {
           const json = await response.json();
-          const transformed = api.transform(json);
-
-          if (!transformed || transformed.length === 0) {
-            throw new Error(`${api.name} returned empty data`);
-          }
-
-          // Filter out stablecoins and shuffle
-          const filtered = transformed.filter(coin => !isStablecoin(coin));
-          const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-          setCoins(shuffled);
-
-          // Build price map
-          const prices = {};
-          transformed.forEach(coin => {
-            prices[coin.id] = coin.current_price;
+          const data = json.data || json;
+          const transformed = data.map((coin, index) => {
+            const price = parseFloat(coin.priceUsd) || 0;
+            const change = parseFloat(coin.changePercent24Hr) || 0;
+            const sparklineData = Array.from({ length: 24 }, (_, i) => {
+              const progress = i / 23;
+              const startPrice = price / (1 + change / 100);
+              return startPrice + (price - startPrice) * progress + (Math.random() - 0.5) * price * 0.02;
+            });
+            return {
+              id: coin.id,
+              symbol: coin.symbol?.toLowerCase() || '',
+              name: coin.name,
+              image: `https://assets.coincap.io/assets/icons/${coin.symbol?.toLowerCase()}@2x.png`,
+              current_price: price,
+              market_cap: parseFloat(coin.marketCapUsd) || 0,
+              market_cap_rank: index + 1,
+              total_volume: parseFloat(coin.volumeUsd24Hr) || 0,
+              price_change_percentage_24h: change,
+              high_24h: price * 1.02,
+              low_24h: price * 0.98,
+              sparkline_in_7d: { price: sparklineData },
+            };
           });
-          setCurrentPrices(prices);
 
-          console.log(`✅ ${api.name} API success! Got ${transformed.length} coins`);
-          setDataSource('live');
-          setLoading(false);
-          return; // Success! Exit the loop
-        } catch (error) {
-          console.warn(`❌ ${api.name} failed:`, error.message);
-          continue; // Try next API
+          if (transformed.length > 0) {
+            const filtered = transformed.filter(coin => !isStablecoin(coin));
+            const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+            setCoins(shuffled);
+
+            const prices = {};
+            transformed.forEach(coin => { prices[coin.id] = coin.current_price; });
+            setCurrentPrices(prices);
+
+            console.log(`✅ CoinCap API success! Got ${transformed.length} coins (${filtered.length} after filtering)`);
+            setDataSource('live');
+            setLoading(false);
+            return;
+          }
         }
+        throw new Error('CoinCap failed');
+      } catch (error) {
+        console.warn('❌ CoinCap failed:', error.message);
       }
 
       // All APIs failed - use mock data
