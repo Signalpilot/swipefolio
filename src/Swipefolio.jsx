@@ -5780,13 +5780,13 @@ export default function Swipefolio() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Data source indicator */}
+          {/* Data source indicator - Only show for crypto or if mock data */}
           {dataSource === 'mock' && (
             <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full animate-pulse">
-              ⚠️ Cached
+              ⚠️ Offline
             </span>
           )}
-          {dataSource === 'live' && (
+          {dataSource === 'live' && assetType === 'crypto' && (
             <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
               ● Live
             </span>
