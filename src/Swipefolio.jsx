@@ -1543,119 +1543,20 @@ const PulseRings = ({ active, color = 'blue' }) => {
   );
 };
 
-// Video Background Component - Signal Pilot style with CSS starfield
+// Video Background Component
 const VideoBackground = () => {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoError, setVideoError] = useState(false);
-
-  // Generate stable star positions using useMemo with seeded values
-  const stars = useMemo(() => {
-    const starData = [];
-    // Seeded pseudo-random for consistent positions
-    const seededRandom = (seed) => {
-      const x = Math.sin(seed * 9999) * 10000;
-      return x - Math.floor(x);
-    };
-
-    // Layer 1: Small distant stars (most numerous)
-    for (let i = 0; i < 150; i++) {
-      starData.push({
-        id: `small-${i}`,
-        left: seededRandom(i * 1.1) * 100,
-        top: seededRandom(i * 2.2) * 100,
-        size: seededRandom(i * 3.3) * 1.5 + 0.5,
-        opacity: seededRandom(i * 4.4) * 0.4 + 0.2,
-        delay: seededRandom(i * 5.5) * 5,
-        duration: seededRandom(i * 6.6) * 3 + 2,
-      });
-    }
-
-    // Layer 2: Medium stars
-    for (let i = 0; i < 50; i++) {
-      starData.push({
-        id: `med-${i}`,
-        left: seededRandom(i * 7.7 + 100) * 100,
-        top: seededRandom(i * 8.8 + 100) * 100,
-        size: seededRandom(i * 9.9 + 100) * 2 + 1.5,
-        opacity: seededRandom(i * 10.1 + 100) * 0.5 + 0.3,
-        delay: seededRandom(i * 11.2 + 100) * 4,
-        duration: seededRandom(i * 12.3 + 100) * 2 + 3,
-      });
-    }
-
-    // Layer 3: Bright stars (fewer)
-    for (let i = 0; i < 20; i++) {
-      starData.push({
-        id: `bright-${i}`,
-        left: seededRandom(i * 13.4 + 200) * 100,
-        top: seededRandom(i * 14.5 + 200) * 100,
-        size: seededRandom(i * 15.6 + 200) * 2 + 2.5,
-        opacity: seededRandom(i * 16.7 + 200) * 0.3 + 0.7,
-        delay: seededRandom(i * 17.8 + 200) * 3,
-        duration: seededRandom(i * 18.9 + 200) * 2 + 4,
-      });
-    }
-
-    return starData;
-  }, []);
-
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
-      {/* Dark space background */}
-      <div className="absolute inset-0 bg-[#030508]" />
-
-      {/* Video Background (if available) */}
-      {!videoError && (
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          onLoadedData={() => setVideoLoaded(true)}
-          onError={() => setVideoError(true)}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-            videoLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ pointerEvents: 'none' }}
-        >
-          <source src="/videos/starfield-bg.mp4" type="video/mp4" />
-        </video>
-      )}
-
-      {/* CSS starfield (always shows as base, video overlays if loaded) */}
-      <div className="absolute inset-0">
-        {stars.map((star) => (
-          <div
-            key={star.id}
-            className="absolute rounded-full bg-white"
-            style={{
-              left: `${star.left}%`,
-              top: `${star.top}%`,
-              width: `${star.size}px`,
-              height: `${star.size}px`,
-              opacity: star.opacity,
-              animation: `twinkle ${star.duration}s ease-in-out ${star.delay}s infinite`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Subtle moving glow effect */}
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          background: 'radial-gradient(ellipse 80% 50% at 50% 50%, rgba(30,40,80,0.3) 0%, transparent 60%)',
-          animation: 'pulse 8s ease-in-out infinite',
-        }}
-      />
-
-      {/* Subtle vignette overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)'
-        }}
-      />
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ pointerEvents: 'none' }}
+      >
+        <source src="/videos/starfield-bg.mp4" type="video/mp4" />
+      </video>
     </div>
   );
 };
