@@ -1543,57 +1543,20 @@ const PulseRings = ({ active, color = 'blue' }) => {
   );
 };
 
-// Video Background Component - Signal Pilot style
+// Video Background Component
 const VideoBackground = () => {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoError, setVideoError] = useState(false);
-
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
-      {/* Video Background */}
-      {!videoError && (
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          onLoadedData={() => setVideoLoaded(true)}
-          onError={() => setVideoError(true)}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-            videoLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ pointerEvents: 'none' }}
-        >
-          <source src="/videos/starfield-bg.mp4" type="video/mp4" />
-        </video>
-      )}
-
-      {/* Fallback CSS starfield (shows while video loads or if it fails) */}
-      {(!videoLoaded || videoError) && (
-        <div className="absolute inset-0 bg-[#05070d]">
-          {Array.from({ length: 50 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-white"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: `${Math.random() * 2 + 1}px`,
-                height: `${Math.random() * 2 + 1}px`,
-                animationDelay: `${Math.random() * 3}s`,
-                opacity: Math.random() * 0.5 + 0.2,
-                animation: `twinkle ${2 + Math.random() * 2}s ease-in-out infinite`,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Subtle overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: 'rgba(5,7,13,0.15)' }}
-      />
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ pointerEvents: 'none' }}
+      >
+        <source src="/videos/starfield-bg.mp4" type="video/mp4" />
+      </video>
     </div>
   );
 };
